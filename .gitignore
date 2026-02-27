@@ -1,0 +1,26 @@
+# Tool caches
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.tox/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+
+
+# Build artifacts
+docs/_build/
+coverage.xml
+.coverage
+
+# OS junk
+.DS_Store
+Thumbs.db

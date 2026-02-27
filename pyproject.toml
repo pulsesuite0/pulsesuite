@@ -1,0 +1,195 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pulsesuite"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+description = "PulseSuite: Simulation suite for ultrafast laser-matter interactions in semiconductor quantum structures"
+version = "0.1.0"
+authors = [
+    { name = "Rahul R. Sah", email = "f1rahulranjan@gmail.com" },
+    { name = "Emily S. Hatten", email = "emily.hatten@bellsouth.net" }
+]
+
+maintainers = [
+    { name = "Rahul R. Sah", email = "f1rahulranjan@gmail.com" }
+]
+
+keywords = [
+    "physics",
+    "semiconductor",
+    "quantum",
+    "bloch-equations",
+    "laser",
+    "pulse",
+    "simulation",
+    "quantum-wire",
+    "quantum-well",
+    "computational-physics",
+    "optics",
+    "electromagnetics",
+]
+
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+
+dependencies = [
+    "numpy>=1.26.4",
+    "scipy>=1.15.2",
+    "matplotlib>=3.10.0",
+    "pyfftw>=0.15.0",
+    "numba>=0.61.2",
+]
+
+
+[project.urls]
+Homepage = "https://github.com/pulsesuite0/pulsesuite"
+Documentation = "https://example.com"
+Source = "https://github.com/pulsesuite0/pulsesuite"
+Tracker = "https://github.com/pulsesuite0/pulsesuite/issues"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.3.4",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",
+]
+gpu = [
+    "cupy-cuda12x>=13.5.0",    # GPU array ops (requires CUDA 12 driver)
+    "numba-cuda>=0.6.0",       # Numba @cuda.jit kernels
+]
+jupyter = ["notebook", "ipywidgets>=7.6"]
+doc = [
+    "httpx",
+    "ipython>=5.0",
+    "ipywidgets>=7.6",
+    "jupyter-client",
+    "jupytext",
+    "jupyter",
+    "jupyter_rfb",
+    "nbconvert>=5.5",
+    "myst-nb",
+    "sgp4",
+    "sphinx>=5.0,<9.0", #!=3.5,!=4.0,<5.1",  # https://github.com/readthedocs/sphinx-hoverxref/issues/119
+    "sphinx-autoapi", # >=3.0.0",
+    "sphinx-gallery<=0.19.0",  # Just to avoid the jupytext warning
+    "sphinx_rtd_theme", # ~=1.0.0",
+    "sphinx-hoverxref", # ==0.7b1",
+    "sphinx-notfound-page",
+    "sphinx-copybutton", # >0.2.9",
+    "sphinx-github-role", # ~=0.1.0",
+    "sphinxcontrib-bibtex",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*.md", "*.txt", "*.params"]
+
+# Ruff configuration for linting
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.ruff.lint]
+extend-select = [
+    "E",  # pycodestyle errors
+    "F",  # pyflakes
+    "I",  # isort
+    "W",  # pycodestyle warnings
+]
+
+ignore = [
+    "E501",  # Line too long (handled by formatter)
+    "E402",  # Module-level import not at top — common with try/except for optional deps
+    "E731",  # Lambda assignment — acceptable in scientific/test code
+    "E741",  # Ambiguous variable name (I, l, O) — standard physics notation
+    "E701",  # Multiple statements on one line — acceptable in compact expressions
+    "E712",  # Comparison to True/False — acceptable in tests for explicit checks
+    "E722",  # Bare except — legacy code, acceptable for now
+    "F403",  # Star imports — used in legacy typelens module
+    "F405",  # May be undefined from star imports — related to F403
+    "F811",  # Redefinition of unused name — backward-compatible shims intentionally override
+    "F841",  # Local variable assigned but never used — physics arrays often pre-allocated
+]
+
+exclude = [
+    ".git",
+    ".tox",
+    ".venv",
+    "build",
+    "dist",
+    "__pycache__",
+    "*.egg-info",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pulsesuite"]
+combine-as-imports = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# Pytest configuration
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.mypy]
+check_untyped_defs = true
+strict_optional = false
+ignore_missing_imports = true
