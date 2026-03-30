@@ -80,10 +80,10 @@ _dc = np.complex128
 # ──────────────────────────────────────────────────────────────────────────────
 # Grading constants (mirror Fortran module parameters)
 # ──────────────────────────────────────────────────────────────────────────────
-_M_PROFILE: int = 4         # polynomial grading order
-_KAPPA_MAX: float = 8.0     # coordinate stretching maximum
-_ALPHA_MAX: float = 0.05    # CFS shift parameter
-_R_TARGET: float = 1.0e-8   # target reflection coefficient
+_M_PROFILE: int = 4  # polynomial grading order
+_KAPPA_MAX: float = 8.0  # coordinate stretching maximum
+_ALPHA_MAX: float = 0.05  # CFS shift parameter
+_R_TARGET: float = 1.0e-8  # target reflection coefficient
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Pure helper functions (module-level, no state — Fortran "pure" subroutines)
@@ -183,17 +183,36 @@ def CalcCoefficients1D(
 
 @njit(parallel=True, cache=True)
 def _cpml_B_kernel(
-    Bx, By, Bz,
-    dEz_dy, dEy_dz,   # for Bx: (∂Ez/∂y, ∂Ey/∂z)
-    dEx_dz, dEz_dx,   # for By: (∂Ex/∂z, ∂Ez/∂x)
-    dEy_dx, dEx_dy,   # for Bz: (∂Ey/∂x, ∂Ex/∂y)
-    psi_Bxy, psi_Bxz,
-    psi_Byx, psi_Byz,
-    psi_Bzx, psi_Bzy,
-    bx, cx, by, cy, bz, cz,
-    kappa_x, kappa_y, kappa_z,
-    npml_x, npml_y, npml_z,
-    Nx, Ny, Nz,
+    Bx,
+    By,
+    Bz,
+    dEz_dy,
+    dEy_dz,  # for Bx: (∂Ez/∂y, ∂Ey/∂z)
+    dEx_dz,
+    dEz_dx,  # for By: (∂Ex/∂z, ∂Ez/∂x)
+    dEy_dx,
+    dEx_dy,  # for Bz: (∂Ey/∂x, ∂Ex/∂y)
+    psi_Bxy,
+    psi_Bxz,
+    psi_Byx,
+    psi_Byz,
+    psi_Bzx,
+    psi_Bzy,
+    bx,
+    cx,
+    by,
+    cy,
+    bz,
+    cz,
+    kappa_x,
+    kappa_y,
+    kappa_z,
+    npml_x,
+    npml_y,
+    npml_z,
+    Nx,
+    Ny,
+    Nz,
     dt,
 ):
     r"""B-field CPML correction kernel (Numba parallel, in-place).
@@ -239,33 +258,59 @@ def _cpml_B_kernel(
 
                 # Additive CPML corrections to B (real-space complex128)
                 Bx[i, j, k] -= dt * (
-                    (1.0 / kappa_y[j] - 1.0) * dEzdy + psi_Bxy[i, j, k]
-                    - (1.0 / kappa_z[k] - 1.0) * dEydz - psi_Bxz[i, j, k]
+                    (1.0 / kappa_y[j] - 1.0) * dEzdy
+                    + psi_Bxy[i, j, k]
+                    - (1.0 / kappa_z[k] - 1.0) * dEydz
+                    - psi_Bxz[i, j, k]
                 )
                 By[i, j, k] -= dt * (
-                    (1.0 / kappa_z[k] - 1.0) * dExdz + psi_Byz[i, j, k]
-                    - (1.0 / kappa_x[i] - 1.0) * dEzdx - psi_Byx[i, j, k]
+                    (1.0 / kappa_z[k] - 1.0) * dExdz
+                    + psi_Byz[i, j, k]
+                    - (1.0 / kappa_x[i] - 1.0) * dEzdx
+                    - psi_Byx[i, j, k]
                 )
                 Bz[i, j, k] -= dt * (
-                    (1.0 / kappa_x[i] - 1.0) * dEydx + psi_Bzx[i, j, k]
-                    - (1.0 / kappa_y[j] - 1.0) * dExdy - psi_Bzy[i, j, k]
+                    (1.0 / kappa_x[i] - 1.0) * dEydx
+                    + psi_Bzx[i, j, k]
+                    - (1.0 / kappa_y[j] - 1.0) * dExdy
+                    - psi_Bzy[i, j, k]
                 )
 
 
 @njit(parallel=True, cache=True)
 def _cpml_E_kernel(
-    Ex, Ey, Ez,
-    dBz_dy, dBy_dz,   # for Ex: (∂Bz/∂y, ∂By/∂z)
-    dBx_dz, dBz_dx,   # for Ey: (∂Bx/∂z, ∂Bz/∂x)
-    dBy_dx, dBx_dy,   # for Ez: (∂By/∂x, ∂Bx/∂y)
-    psi_Exy, psi_Exz,
-    psi_Eyx, psi_Eyz,
-    psi_Ezx, psi_Ezy,
-    bx, cx, by, cy, bz, cz,
-    kappa_x, kappa_y, kappa_z,
-    npml_x, npml_y, npml_z,
-    Nx, Ny, Nz,
-    v2, dt,
+    Ex,
+    Ey,
+    Ez,
+    dBz_dy,
+    dBy_dz,  # for Ex: (∂Bz/∂y, ∂By/∂z)
+    dBx_dz,
+    dBz_dx,  # for Ey: (∂Bx/∂z, ∂Bz/∂x)
+    dBy_dx,
+    dBx_dy,  # for Ez: (∂By/∂x, ∂Bx/∂y)
+    psi_Exy,
+    psi_Exz,
+    psi_Eyx,
+    psi_Eyz,
+    psi_Ezx,
+    psi_Ezy,
+    bx,
+    cx,
+    by,
+    cy,
+    bz,
+    cz,
+    kappa_x,
+    kappa_y,
+    kappa_z,
+    npml_x,
+    npml_y,
+    npml_z,
+    Nx,
+    Ny,
+    Nz,
+    v2,
+    dt,
 ):
     r"""E-field CPML correction kernel (Numba parallel, in-place).
 
@@ -306,17 +351,35 @@ def _cpml_E_kernel(
                 psi_Ezy[i, j, k] = by[j] * psi_Ezy[i, j, k] + cy[j] * dBxdy
 
                 # Additive CPML corrections to E
-                Ex[i, j, k] += v2 * dt * (
-                    (1.0 / kappa_y[j] - 1.0) * dBzdy + psi_Exy[i, j, k]
-                    - (1.0 / kappa_z[k] - 1.0) * dBydz - psi_Exz[i, j, k]
+                Ex[i, j, k] += (
+                    v2
+                    * dt
+                    * (
+                        (1.0 / kappa_y[j] - 1.0) * dBzdy
+                        + psi_Exy[i, j, k]
+                        - (1.0 / kappa_z[k] - 1.0) * dBydz
+                        - psi_Exz[i, j, k]
+                    )
                 )
-                Ey[i, j, k] += v2 * dt * (
-                    (1.0 / kappa_z[k] - 1.0) * dBxdz + psi_Eyz[i, j, k]
-                    - (1.0 / kappa_x[i] - 1.0) * dBzdx - psi_Eyx[i, j, k]
+                Ey[i, j, k] += (
+                    v2
+                    * dt
+                    * (
+                        (1.0 / kappa_z[k] - 1.0) * dBxdz
+                        + psi_Eyz[i, j, k]
+                        - (1.0 / kappa_x[i] - 1.0) * dBzdx
+                        - psi_Eyx[i, j, k]
+                    )
                 )
-                Ez[i, j, k] += v2 * dt * (
-                    (1.0 / kappa_x[i] - 1.0) * dBydx + psi_Ezx[i, j, k]
-                    - (1.0 / kappa_y[j] - 1.0) * dBxdy - psi_Ezy[i, j, k]
+                Ez[i, j, k] += (
+                    v2
+                    * dt
+                    * (
+                        (1.0 / kappa_x[i] - 1.0) * dBydx
+                        + psi_Ezx[i, j, k]
+                        - (1.0 / kappa_y[j] - 1.0) * dBxdy
+                        - psi_Ezy[i, j, k]
+                    )
                 )
 
 
@@ -577,17 +640,36 @@ class CPML:
 
         # Step 3: update ψ fields and apply corrections (Numba kernel)
         _cpml_B_kernel(
-            Bx, By, Bz,
-            d[0], d[1], d[2], d[3], d[4], d[5],
-            self.psi_Bxy, self.psi_Bxz,
-            self.psi_Byx, self.psi_Byz,
-            self.psi_Bzx, self.psi_Bzy,
-            self.bx, self.cx,
-            self.by, self.cy,
-            self.bz, self.cz,
-            self.kappa_x, self.kappa_y, self.kappa_z,
-            self.npml_x, self.npml_y, self.npml_z,
-            self.Nx, self.Ny, self.Nz,
+            Bx,
+            By,
+            Bz,
+            d[0],
+            d[1],
+            d[2],
+            d[3],
+            d[4],
+            d[5],
+            self.psi_Bxy,
+            self.psi_Bxz,
+            self.psi_Byx,
+            self.psi_Byz,
+            self.psi_Bzx,
+            self.psi_Bzy,
+            self.bx,
+            self.cx,
+            self.by,
+            self.cy,
+            self.bz,
+            self.cz,
+            self.kappa_x,
+            self.kappa_y,
+            self.kappa_z,
+            self.npml_x,
+            self.npml_y,
+            self.npml_z,
+            self.Nx,
+            self.Ny,
+            self.Nz,
             dt,
         )
 
@@ -653,18 +735,38 @@ class CPML:
 
         # Step 3: update ψ fields and apply corrections
         _cpml_E_kernel(
-            Ex, Ey, Ez,
-            d[0], d[1], d[2], d[3], d[4], d[5],
-            self.psi_Exy, self.psi_Exz,
-            self.psi_Eyx, self.psi_Eyz,
-            self.psi_Ezx, self.psi_Ezy,
-            self.bx, self.cx,
-            self.by, self.cy,
-            self.bz, self.cz,
-            self.kappa_x, self.kappa_y, self.kappa_z,
-            self.npml_x, self.npml_y, self.npml_z,
-            self.Nx, self.Ny, self.Nz,
-            v2, dt,
+            Ex,
+            Ey,
+            Ez,
+            d[0],
+            d[1],
+            d[2],
+            d[3],
+            d[4],
+            d[5],
+            self.psi_Exy,
+            self.psi_Exz,
+            self.psi_Eyx,
+            self.psi_Eyz,
+            self.psi_Ezx,
+            self.psi_Ezy,
+            self.bx,
+            self.cx,
+            self.by,
+            self.cy,
+            self.bz,
+            self.cz,
+            self.kappa_x,
+            self.kappa_y,
+            self.kappa_z,
+            self.npml_x,
+            self.npml_y,
+            self.npml_z,
+            self.Nx,
+            self.Ny,
+            self.Nz,
+            v2,
+            dt,
         )
 
         # Step 4: FFT E fields → k-space

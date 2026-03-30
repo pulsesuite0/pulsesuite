@@ -161,14 +161,14 @@ def _build_1d_mask(N: int, npml: int, dt: float) -> NDArray[_dp]:
     # rho = 0 at interior edge (cell npml-1), rho = 1 at outermost (cell 0)
     for i in range(npml):
         rho = (npml - 1 - i) / max(npml - 1, 1)
-        gamma_val = gamma_max * rho ** M_GRADE
+        gamma_val = gamma_max * rho**M_GRADE
         mask1d[i] = np.exp(-gamma_val * dt)
 
     # Right absorbing layer: cells N-npml to N-1
     # rho = 0 at interior edge, rho = 1 at outermost cell
     for i in range(N - npml, N):
         rho = (i - (N - npml)) / max(npml, 1)
-        gamma_val = gamma_max * rho ** M_GRADE
+        gamma_val = gamma_max * rho**M_GRADE
         mask1d[i] = np.exp(-gamma_val * dt)
 
     return mask1d
@@ -212,15 +212,11 @@ def InitAbsorber(Nx: int, Ny: int, Nz: int, dt: float) -> None:
     )
 
     print("=== Absorber Initialization ===")
-    print(f"  Type: Masking (polynomial grading, Kosloff & Kosloff 1986)")
+    print("  Type: Masking (polynomial grading, Kosloff & Kosloff 1986)")
     print(f"  Grid: {Nx} x {Ny} x {Nz}")
-    print(
-        f"  PML cells: npml_x={npml_x}  npml_y={npml_y}  npml_z={npml_z}"
-    )
+    print(f"  PML cells: npml_x={npml_x}  npml_y={npml_y}  npml_z={npml_z}")
     print(f"  U0_per_step = {U0_PER_STEP}  m_grade = {M_GRADE}")
-    print(
-        f"  Mask range: [{_state['mask'].min():.6e}, {_state['mask'].max():.6e}]"
-    )
+    print(f"  Mask range: [{_state['mask'].min():.6e}, {_state['mask'].max():.6e}]")
     print("=== Absorber Initialization Complete ===")
 
 
@@ -275,7 +271,7 @@ def ApplyAbsorber_B(
     Bx, By, Bz : ndarray (Nx, Ny, Nz), complex128
         Magnetic field components in k-space.  Modified in-place.
     """
-    from ..core.fftw import fft_3D, ifft_3D 
+    from ..core.fftw import fft_3D, ifft_3D
 
     mask = _state["mask"]
 

@@ -176,9 +176,15 @@ def UpdateB3D(
 def InitializeFields(
     Nx: int, Ny: int, Nz: int
 ) -> tuple[
-    NDArray[_dc], NDArray[_dc], NDArray[_dc],
-    NDArray[_dc], NDArray[_dc], NDArray[_dc],
-    NDArray[_dc], NDArray[_dc], NDArray[_dc],
+    NDArray[_dc],
+    NDArray[_dc],
+    NDArray[_dc],
+    NDArray[_dc],
+    NDArray[_dc],
+    NDArray[_dc],
+    NDArray[_dc],
+    NDArray[_dc],
+    NDArray[_dc],
 ]:
     """Allocate and zero-fill all nine field component arrays.
 
@@ -191,7 +197,9 @@ def InitializeFields(
 
 
 def SeedInitialCondition(
-    space, time, pulse,
+    space,
+    time,
+    pulse,
     Ey: NDArray[_dc],
     Bz: NDArray[_dc],
     npml_x: int = 0,
@@ -408,9 +416,15 @@ class PSTD3DPropagator:
 
         # Allocate fields
         (
-            self.Ex, self.Ey, self.Ez,
-            self.Bx, self.By, self.Bz,
-            self.Jx, self.Jy, self.Jz,
+            self.Ex,
+            self.Ey,
+            self.Ez,
+            self.Bx,
+            self.By,
+            self.Bz,
+            self.Jx,
+            self.Jy,
+            self.Jz,
         ) = InitializeFields(self._Nx, self._Ny, self._Nz)
 
         # Real-space scratch arrays for diagnostics
@@ -423,9 +437,14 @@ class PSTD3DPropagator:
             from .cpml import InitCPML
 
             InitCPML(
-                self._Nx, self._Ny, self._Nz,
-                GetDx(space), GetDy(space), GetDz(space),
-                self._dt, GetEpsr(space),
+                self._Nx,
+                self._Ny,
+                self._Nz,
+                GetDx(space),
+                GetDy(space),
+                GetDz(space),
+                self._dt,
+                GetEpsr(space),
             )
         elif boundary_type == "mask":
             from .absorber import InitAbsorber
@@ -464,9 +483,7 @@ class PSTD3DPropagator:
         # IC mode: seed pulse into fields
         if source_type == "ic":
             npml_x = self._get_npml_x()
-            SeedInitialCondition(
-                space, time, pulse, self.Ey, self.Bz, npml_x
-            )
+            SeedInitialCondition(space, time, pulse, self.Ey, self.Bz, npml_x)
             print("  Source type: Initial Condition (IC)")
         else:
             print("  Source type: Additive Soft Source")
@@ -575,7 +592,6 @@ class PSTD3DPropagator:
 
             # ── TIME LOOP ────────────────────────────────────────────
             for n in range(n1, Nt + 1):
-
                 # --- Diagnostics (IFFT to real space) ---
                 self._Ex_r[...] = self.Ex
                 self._Ey_r[...] = self.Ey
@@ -594,9 +610,7 @@ class PSTD3DPropagator:
 
                 # NaN / overflow detection
                 if np.isnan(Emax) or Emax > 1.0e20:
-                    raise RuntimeError(
-                        f"NaN or overflow at step {n}, Emax = {Emax}"
-                    )
+                    raise RuntimeError(f"NaN or overflow at step {n}, Emax = {Emax}")
 
                 print(f"  {n}  {Nt}  {Emax:.6e}")
                 f_emax.write(f"{n:8d} {Emax:15.7e}\n")
@@ -610,19 +624,33 @@ class PSTD3DPropagator:
                 # ── UPDATE E-FIELDS ──────────────────────────────────
                 # 1. Spectral curl update
                 UpdateE3D(
-                    self.space, self.time,
-                    self.Bx, self.By, self.Bz,
-                    self.Jx, self.Jy, self.Jz,
-                    self.Ex, self.Ey, self.Ez,
+                    self.space,
+                    self.time,
+                    self.Bx,
+                    self.By,
+                    self.Bz,
+                    self.Jx,
+                    self.Jy,
+                    self.Jz,
+                    self.Ex,
+                    self.Ey,
+                    self.Ez,
                 )
 
                 # 2. Absorbing boundary correction
                 if self.boundary_type == "cpml":
                     ApplyCPML_E(
-                        self.Ex, self.Ey, self.Ez,
-                        self.Bx, self.By, self.Bz,
-                        self._kx, self._ky, self._kz,
-                        v2, dt,
+                        self.Ex,
+                        self.Ey,
+                        self.Ez,
+                        self.Bx,
+                        self.By,
+                        self.Bz,
+                        self._kx,
+                        self._ky,
+                        self._kz,
+                        v2,
+                        dt,
                     )
                 elif self.boundary_type == "mask":
                     ApplyAbsorber_E(self.Ex, self.Ey, self.Ez)
@@ -630,8 +658,12 @@ class PSTD3DPropagator:
                 # 3. Soft-source injection for Ey (soft mode only)
                 if self.source_type == "soft":
                     UpdateTFSC(
-                        self.Ey, self._tfsf, self.space,
-                        self.time, self.pulse, Amp,
+                        self.Ey,
+                        self._tfsf,
+                        self.space,
+                        self.time,
+                        self.pulse,
+                        Amp,
                     )
 
                 # 4. Advance time by half-step
@@ -639,25 +671,41 @@ class PSTD3DPropagator:
 
                 # 5. Current density source
                 self.calc_j(
-                    self.space, self.time,
-                    self.Ex, self.Ey, self.Ez,
-                    self.Jx, self.Jy, self.Jz,
+                    self.space,
+                    self.time,
+                    self.Ex,
+                    self.Ey,
+                    self.Ez,
+                    self.Jx,
+                    self.Jy,
+                    self.Jz,
                 )
 
                 # ── UPDATE B-FIELDS ──────────────────────────────────
                 # 6. Spectral curl update
                 UpdateB3D(
-                    self.space, self.time,
-                    self.Ex, self.Ey, self.Ez,
-                    self.Bx, self.By, self.Bz,
+                    self.space,
+                    self.time,
+                    self.Ex,
+                    self.Ey,
+                    self.Ez,
+                    self.Bx,
+                    self.By,
+                    self.Bz,
                 )
 
                 # 7. Absorbing boundary correction
                 if self.boundary_type == "cpml":
                     ApplyCPML_B(
-                        self.Bx, self.By, self.Bz,
-                        self.Ex, self.Ey, self.Ez,
-                        self._kx, self._ky, self._kz,
+                        self.Bx,
+                        self.By,
+                        self.Bz,
+                        self.Ex,
+                        self.Ey,
+                        self.Ez,
+                        self._kx,
+                        self._ky,
+                        self._kz,
                         dt,
                     )
                 elif self.boundary_type == "mask":
@@ -667,8 +715,12 @@ class PSTD3DPropagator:
                 #    Amplitude = E0/v for impedance ratio Ey/Bz = v
                 if self.source_type == "soft":
                     UpdateTFSC(
-                        self.Bz, self._tfsf, self.space,
-                        self.time, self.pulse, Amp / v,
+                        self.Bz,
+                        self._tfsf,
+                        self.space,
+                        self.time,
+                        self.pulse,
+                        Amp / v,
                     )
 
                 # 9. Advance time by half-step, update counter
@@ -733,9 +785,11 @@ class PSTD3DPropagator:
         npx = npy = npz = 0
         if self.boundary_type == "cpml":
             from .cpml import GetCPMLInfo
+
             npx, npy, npz = GetCPMLInfo()
         elif self.boundary_type == "mask":
             from .absorber import GetAbsorberInfo
+
             npx, npy, npz = GetAbsorberInfo()
 
         # Memory estimate (MB)
@@ -804,7 +858,9 @@ class PSTD3DPropagator:
             u.write(f"  Chirp          = {GetChirp(pulse):12.4e} rad/s^2\n")
             omega0 = pulse.CalcOmega0()
             u.write(f"  omega0         = {omega0:12.4e} rad/s\n")
-            u.write(f"  Delta_omega    = {CalcDeltaOmega(pulse):12.4e} rad/s  (spectral FWHM)\n")
+            u.write(
+                f"  Delta_omega    = {CalcDeltaOmega(pulse):12.4e} rad/s  (spectral FWHM)\n"
+            )
             u.write(f"  w0 (beam waist)= {w0:12.4e} m\n")
             u.write(f"  Optical cycles = {n_cycles:.1f}\n")
             u.write(f"  T_optical      = {GetLambda(pulse) / _c0:12.4e} s\n")
@@ -818,16 +874,23 @@ class PSTD3DPropagator:
             u.write(f"  Type           = {self.boundary_type}\n")
             u.write(f"  PML cells      = {npx} x {npy} x {npz}\n")
             u.write(
-                f"  Interior cells = {Nx - 2 * npx} x {Ny - 2 * npy}"
-                f" x {Nz - 2 * npz}\n"
+                f"  Interior cells = {Nx - 2 * npx} x {Ny - 2 * npy} x {Nz - 2 * npz}\n"
             )
             if self.boundary_type == "mask":
-                u.write("  Algorithm      = Multiplicative masking (Kosloff & Kosloff 1986)\n")
-                u.write("  Profile        = Polynomial grading, exp(-gamma*dt) per step\n")
+                u.write(
+                    "  Algorithm      = Multiplicative masking (Kosloff & Kosloff 1986)\n"
+                )
+                u.write(
+                    "  Profile        = Polynomial grading, exp(-gamma*dt) per step\n"
+                )
                 u.write("  Stability      = Unconditionally stable (|mask| <= 1)\n")
             elif self.boundary_type == "cpml":
-                u.write("  Algorithm      = CPML (Chen & Wang 2013, embedded formulation)\n")
-                u.write("  Profile        = CFS polynomial grading (Roden & Gedney 2000)\n")
+                u.write(
+                    "  Algorithm      = CPML (Chen & Wang 2013, embedded formulation)\n"
+                )
+                u.write(
+                    "  Profile        = CFS polynomial grading (Roden & Gedney 2000)\n"
+                )
                 u.write("  Stability      = Conditional (see Gedney Ch. 7)\n")
             else:
                 u.write("  Algorithm      = None (periodic FFT boundaries)\n")
@@ -837,35 +900,55 @@ class PSTD3DPropagator:
             u.write("--- Source Injection ---\n")
             u.write(f"  Type           = {self.source_type}\n")
             if self.source_type == "ic":
-                u.write("  Method         = Initial condition: full E_y(x) + B_z(x) seeded at t=t0\n")
+                u.write(
+                    "  Method         = Initial condition: full E_y(x) + B_z(x) seeded at t=t0\n"
+                )
                 u.write("  Spatial profile = Gaussian envelope * exp(+ik*x) carrier\n")
-                u.write("  B_z coupling   = B_z = E_y / v  (forward-propagating +x wave)\n")
+                u.write(
+                    "  B_z coupling   = B_z = E_y / v  (forward-propagating +x wave)\n"
+                )
                 u.write("  Reference      = Taflove & Hagness 2005, Ch. 5\n")
             else:
-                u.write("  Method         = Soft source: additive field injection each step\n")
+                u.write(
+                    "  Method         = Soft source: additive field injection each step\n"
+                )
                 u.write("  TFSF window    = Normalised Gaussian (sigma = 5*dx)\n")
-                u.write("  Reference      = Schneider 2010, Ch. 5; Capoglu et al. 2012\n")
+                u.write(
+                    "  Reference      = Schneider 2010, Ch. 5; Capoglu et al. 2012\n"
+                )
             u.write("\n")
 
             u.write("--- Output Format ---\n")
             u.write("  Emax.dat            ASCII, columns: step  Emax (V/m)\n")
             u.write("  grid_{x,y,z}.npy    Coordinate arrays (numpy binary)\n")
-            u.write(f"  [F]_NNNNNN.npy      Field snapshots every {self.snapshot_interval} steps\n")
+            u.write(
+                f"  [F]_NNNNNN.npy      Field snapshots every {self.snapshot_interval} steps\n"
+            )
             u.write("    Shape: (Nx, Ny, Nz), dtype float32 (real part)\n\n")
 
             u.write("--- Reading .npy snapshots in Python ---\n")
             u.write("  import numpy as np\n")
-            u.write('  data = np.load("Ey_000500.npy")  # shape (Nx, Ny, Nz), float32\n')
+            u.write(
+                '  data = np.load("Ey_000500.npy")  # shape (Nx, Ny, Nz), float32\n'
+            )
             u.write("  # Mid-plane slice (y-normal):\n")
             u.write("  # slice_xz = data[:, Ny//2, :]\n\n")
 
             u.write("--- References ---\n")
-            u.write('  [1] Liu QH (1997) "The PSTD algorithm." Microw Opt Technol Lett 15:158\n')
-            u.write('  [2] Berenger JP (1994) "A perfectly matched layer." J Comput Phys 114:185\n')
+            u.write(
+                '  [1] Liu QH (1997) "The PSTD algorithm." Microw Opt Technol Lett 15:158\n'
+            )
+            u.write(
+                '  [2] Berenger JP (1994) "A perfectly matched layer." J Comput Phys 114:185\n'
+            )
             u.write('  [3] Chen J, Wang J (2013) "CPML for PSTD." ACES J 28(8):680\n')
             u.write('  [4] Gedney SD (2005) "PML ABC." Ch.7 in Taflove & Hagness\n')
-            u.write('  [5] Kosloff R, Kosloff D (1986) "Absorbing boundaries." J Comput Phys 63:363\n')
-            u.write('  [6] Roden JA, Gedney SD (2000) "CPML." Microw Opt Technol Lett 27:334\n')
+            u.write(
+                '  [5] Kosloff R, Kosloff D (1986) "Absorbing boundaries." J Comput Phys 63:363\n'
+            )
+            u.write(
+                '  [6] Roden JA, Gedney SD (2000) "CPML." Microw Opt Technol Lett 27:334\n'
+            )
 
     def _write_grid(self) -> None:
         """Save spatial coordinate arrays as ``.npy`` files."""
@@ -919,7 +1002,9 @@ def PSTD_3D_Propagator(
     """
     global _default
     _default = PSTD3DPropagator(
-        space, time, pulse,
+        space,
+        time,
+        pulse,
         source_type=source_type,
         boundary_type=boundary_type,
         calc_j=calc_j,
