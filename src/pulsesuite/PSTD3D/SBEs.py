@@ -631,7 +631,7 @@ def Preparation(
     #     CalcWnn(-e0, Vr, Wee)
     #     CalcWnn(+e0, np.conj(Vr), Whh)
 
-    from .benchmark import profile_start as _ps, profile_record as _pr
+    from .benchmark import profile_record as _pr, profile_start as _ps
 
     # Calculate screened Coulomb arrays
     _t0 = _ps()
@@ -1676,7 +1676,7 @@ def Relaxation(ne, nh, VC, E1D, Rsp, dt, w, WriteFields):
     """
     global _EHs, _Phonon, _Recomb, _kr, _xxx, _small
 
-    from .benchmark import profile_start as _ps, profile_record as _pr
+    from .benchmark import profile_record as _pr, profile_start as _ps
 
     if _EHs or _Phonon:
         _t0 = _ps()
@@ -2855,9 +2855,9 @@ def write_statistics(w, dt, ne2, nh2, Re, Rh):
 
     # Write to file
     os.makedirs("output", exist_ok=True)
-    with open(f"output/stats_{_uw+w:03d}.dat", "a", encoding="utf-8") as f:
+    with open(f"output/stats_{_uw + w:03d}.dat", "a", encoding="utf-8") as f:
         f.write(
-            f"{_xxx*dt:18.6e} {ve:18.6e} {vh:18.6e} "
+            f"{_xxx * dt:18.6e} {ve:18.6e} {vh:18.6e} "
             f"{ne_density:18.6e} {nh_density:18.6e} "
             f"{Ee_total:18.6e} {Eh_total:18.6e} "
             f"{Te:18.6e} {Th:18.6e} "
@@ -3437,7 +3437,6 @@ def RecordEpsLqw(Qr, fe, fh, Ee, Eh, gap, area, gamE, gamH, dcv, ind):
         open(filename, "w", encoding="utf-8") as f_eps,
         open(filename2, "w", encoding="utf-8") as f_chi,
     ):
-
         # Loop over frequencies
         for iw in range(nwmax + 1):
             w = iw * dw
@@ -4454,7 +4453,7 @@ def SBECalculator(Ex, Ey, Ez, Vr, dt, Px, Py, Pz, Re, Rh, WriteFields, w):
         _Ia[k, k] = 0.0
         _Id[k, k] = 1.0
 
-    from .benchmark import profile_start, profile_record
+    from .benchmark import profile_record, profile_start
 
     # Checkout coherence matrices from module storage
     Checkout(p1, p2, C1, C2, D1, D2, w)
@@ -4583,15 +4582,15 @@ def SBECalculator(Ex, Ey, Ez, Vr, dt, Px, Py, Pz, Re, Rh, WriteFields, w):
     os.makedirs("dataQW", exist_ok=True)
     with open(f"dataQW/info.{w:02d}.t.dat", "a", encoding="utf-8") as f:
         f.write(
-            f"{_xxx*dt:18.6e} {CalcVD(_kr, _me, ne2):18.6e} {CalcVD(_kr, _mh, nh2):18.6e} "
-            f"{np.real(2*np.sum(ne2)/_L):18.6e} {np.real(2*np.sum(nh2)/_L):18.6e} "
-            f"{TotalEnergy(ne2, _Ee+_gap)/e0:18.6e} {TotalEnergy(nh2, _Eh)/e0:18.6e} "
+            f"{_xxx * dt:18.6e} {CalcVD(_kr, _me, ne2):18.6e} {CalcVD(_kr, _mh, nh2):18.6e} "
+            f"{np.real(2 * np.sum(ne2) / _L):18.6e} {np.real(2 * np.sum(nh2) / _L):18.6e} "
+            f"{TotalEnergy(ne2, _Ee + _gap) / e0:18.6e} {TotalEnergy(nh2, _Eh) / e0:18.6e} "
             f"{Temperature(ne2, _Ee):18.6e} {Temperature(nh2, _Eh):18.6e} "
             f"{np.max(np.abs(Re)):18.6e} {np.max(np.abs(Rh)):18.6e} "
-            f"{GetEDrift():18.6e} {np.real(hbar*np.sum((ne2-nh2)*_kr))*2.0:18.6e} "
-            f"{np.real(hbar*np.sum(ne2*_kr)):18.6e} {np.real(-hbar*np.sum(nh2*_kr)):18.6e} "
-            f"{_I0[w-1]:18.6e} {CalcI0n(ne2, _me, _kr):18.6e} "
-            f"{CalcI0n(1-nh2, -_mh, _kr):18.6e}\n"
+            f"{GetEDrift():18.6e} {np.real(hbar * np.sum((ne2 - nh2) * _kr)) * 2.0:18.6e} "
+            f"{np.real(hbar * np.sum(ne2 * _kr)):18.6e} {np.real(-hbar * np.sum(nh2 * _kr)):18.6e} "
+            f"{_I0[w - 1]:18.6e} {CalcI0n(ne2, _me, _kr):18.6e} "
+            f"{CalcI0n(1 - nh2, -_mh, _kr):18.6e}\n"
         )
 
     # FFT to real space for output
@@ -4605,9 +4604,9 @@ def SBECalculator(Ex, Ey, Ez, Vr, dt, Px, Py, Pz, Re, Rh, WriteFields, w):
     # Write fields and polarizations at center point
     with open(f"dataQW/EP.{w:02d}.t.dat", "a", encoding="utf-8") as f:
         f.write(
-            f"{_xxx*dt:18.6e} {np.real(Ex[_Nr//2]):18.6e} {np.real(Ey[_Nr//2]):18.6e} "
-            f"{np.real(Ez[_Nr//2]):18.6e} {np.real(Px[_Nr//2]):18.6e} "
-            f"{np.real(Py[_Nr//2]):18.6e} {np.real(Pz[_Nr//2]):18.6e}\n"
+            f"{_xxx * dt:18.6e} {np.real(Ex[_Nr // 2]):18.6e} {np.real(Ey[_Nr // 2]):18.6e} "
+            f"{np.real(Ez[_Nr // 2]):18.6e} {np.real(Px[_Nr // 2]):18.6e} "
+            f"{np.real(Py[_Nr // 2]):18.6e} {np.real(Pz[_Nr // 2]):18.6e}\n"
         )
 
     # FFT back to momentum space
@@ -5604,9 +5603,9 @@ class SBESolver:
         Ih = CalcI0n(1 - nh2, -self.mh, self.kr)
 
         os.makedirs("output", exist_ok=True)
-        with open(f"output/stats_{self.uw+w:03d}.dat", "a", encoding="utf-8") as f:
+        with open(f"output/stats_{self.uw + w:03d}.dat", "a", encoding="utf-8") as f:
             f.write(
-                f"{self.xxx*dt:18.6e} {ve:18.6e} {vh:18.6e} "
+                f"{self.xxx * dt:18.6e} {ve:18.6e} {vh:18.6e} "
                 f"{ne_density:18.6e} {nh_density:18.6e} "
                 f"{Ee_total:18.6e} {Eh_total:18.6e} "
                 f"{Te:18.6e} {Th:18.6e} "
@@ -5784,23 +5783,23 @@ class SBESolver:
         os.makedirs("dataQW", exist_ok=True)
         with open(f"dataQW/info.{w:02d}.t.dat", "a", encoding="utf-8") as f:
             f.write(
-                f"{self.xxx*dt:18.6e} "
+                f"{self.xxx * dt:18.6e} "
                 f"{CalcVD(self.kr, self.me, ne2):18.6e} "
                 f"{CalcVD(self.kr, self.mh, nh2):18.6e} "
-                f"{np.real(2*np.sum(ne2)/self.L):18.6e} "
-                f"{np.real(2*np.sum(nh2)/self.L):18.6e} "
-                f"{TotalEnergy(ne2, self.Ee+self.gap)/e0:18.6e} "
-                f"{TotalEnergy(nh2, self.Eh)/e0:18.6e} "
+                f"{np.real(2 * np.sum(ne2) / self.L):18.6e} "
+                f"{np.real(2 * np.sum(nh2) / self.L):18.6e} "
+                f"{TotalEnergy(ne2, self.Ee + self.gap) / e0:18.6e} "
+                f"{TotalEnergy(nh2, self.Eh) / e0:18.6e} "
                 f"{Temperature(ne2, self.Ee):18.6e} "
                 f"{Temperature(nh2, self.Eh):18.6e} "
                 f"{np.max(np.abs(Re)):18.6e} {np.max(np.abs(Rh)):18.6e} "
                 f"{GetEDrift():18.6e} "
-                f"{np.real(hbar*np.sum((ne2-nh2)*self.kr))*2.0:18.6e} "
-                f"{np.real(hbar*np.sum(ne2*self.kr)):18.6e} "
-                f"{np.real(-hbar*np.sum(nh2*self.kr)):18.6e} "
-                f"{self.I0[w-1]:18.6e} "
+                f"{np.real(hbar * np.sum((ne2 - nh2) * self.kr)) * 2.0:18.6e} "
+                f"{np.real(hbar * np.sum(ne2 * self.kr)):18.6e} "
+                f"{np.real(-hbar * np.sum(nh2 * self.kr)):18.6e} "
+                f"{self.I0[w - 1]:18.6e} "
                 f"{CalcI0n(ne2, self.me, self.kr):18.6e} "
-                f"{CalcI0n(1-nh2, -self.mh, self.kr):18.6e}\n"
+                f"{CalcI0n(1 - nh2, -self.mh, self.kr):18.6e}\n"
             )
 
         iFFTG(Ex)
@@ -5812,13 +5811,13 @@ class SBESolver:
 
         with open(f"dataQW/EP.{w:02d}.t.dat", "a", encoding="utf-8") as f:
             f.write(
-                f"{self.xxx*dt:18.6e} "
-                f"{np.real(Ex[self.Nr//2]):18.6e} "
-                f"{np.real(Ey[self.Nr//2]):18.6e} "
-                f"{np.real(Ez[self.Nr//2]):18.6e} "
-                f"{np.real(Px[self.Nr//2]):18.6e} "
-                f"{np.real(Py[self.Nr//2]):18.6e} "
-                f"{np.real(Pz[self.Nr//2]):18.6e}\n"
+                f"{self.xxx * dt:18.6e} "
+                f"{np.real(Ex[self.Nr // 2]):18.6e} "
+                f"{np.real(Ey[self.Nr // 2]):18.6e} "
+                f"{np.real(Ez[self.Nr // 2]):18.6e} "
+                f"{np.real(Px[self.Nr // 2]):18.6e} "
+                f"{np.real(Py[self.Nr // 2]):18.6e} "
+                f"{np.real(Pz[self.Nr // 2]):18.6e}\n"
             )
 
         FFTG(Ex)
@@ -6026,7 +6025,20 @@ def InitializeSBE(q, rr, r0, Emaxxx, lam, Nw, QW):  # noqa: F811
 
 
 def QWCalculator(
-    Exx, Eyy, Ezz, Vrr, rr, q, dt, w, Pxx, Pyy, Pzz, Rho, DoQWP, DoQWDl  # noqa: F811
+    Exx,
+    Eyy,
+    Ezz,
+    Vrr,
+    rr,
+    q,
+    dt,
+    w,
+    Pxx,
+    Pyy,
+    Pzz,
+    Rho,
+    DoQWP,
+    DoQWDl,  # noqa: F811
 ):
     """Backward-compatible shim — delegates to _default_solver."""
     _default_solver.QWCalculator(

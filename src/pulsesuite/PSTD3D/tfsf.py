@@ -133,9 +133,7 @@ def InitializeTFSF(space, pulse) -> NDArray[_dp]:
     print(f"  TFSF source: xp = {xp:.6e} m, sigma = {sigma_src:.6e} m")
 
     # Normalised Gaussian: integral(S * dx) = 1
-    tfsf = np.exp(-0.5 * ((x - xp) / sigma_src) ** 2) / (
-        sigma_src * np.sqrt(_twopi)
-    )
+    tfsf = np.exp(-0.5 * ((x - xp) / sigma_src) ** 2) / (sigma_src * np.sqrt(_twopi))
     return tfsf
 
 

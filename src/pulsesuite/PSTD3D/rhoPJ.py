@@ -464,9 +464,9 @@ def QuantumWire(
         dgy = np.zeros(Ny, dtype=np.complex128)
         dgz = np.zeros(Nz, dtype=np.complex128)
         for j in range(Ny):
-            dgy[j] = -(ry[j] - _y0) / (_ay ** 2) * gy[j]
+            dgy[j] = -(ry[j] - _y0) / (_ay**2) * gy[j]
         for k in range(Nz):
-            dgz[k] = -(rz[k] - _z0) / (_az ** 2) * gz[k]
+            dgz[k] = -(rz[k] - _z0) / (_az**2) * gz[k]
 
         # Central difference dPx/dx with periodic BC
         dPxdx = (np.roll(Pxavg, -1) - np.roll(Pxavg, 1)) / (2.0 * dx)
@@ -493,9 +493,12 @@ def QuantumWire(
         qy_arr = GetKyArray(space)
         qz_arr = GetKzArray(space)
         filt = np.exp(
-            -0.5 * (sigma_x ** 2 * qx_arr[:, np.newaxis, np.newaxis] ** 2
-                     + sigma_y ** 2 * qy_arr[np.newaxis, :, np.newaxis] ** 2
-                     + sigma_z ** 2 * qz_arr[np.newaxis, np.newaxis, :] ** 2)
+            -0.5
+            * (
+                sigma_x**2 * qx_arr[:, np.newaxis, np.newaxis] ** 2
+                + sigma_y**2 * qy_arr[np.newaxis, :, np.newaxis] ** 2
+                + sigma_z**2 * qz_arr[np.newaxis, np.newaxis, :] ** 2
+            )
         )
 
         # Smooth spectral
@@ -672,7 +675,7 @@ def _ElongfromRho_loop_jit(
                 EylfromRho[i, j, k] = (rho_term) * qy[j]
                 EzlfromRho[i, j, k] = (rho_term) * qz[k]
 
-                P_term = -qdotP * inv_epsr  / qsquare
+                P_term = -qdotP * inv_epsr / qsquare
 
                 # deposit into each component
                 ExlfromP[i, j, k] = (P_term) * qx[i]
@@ -686,9 +689,11 @@ def _ElongfromRho_loop_jit(
 
                 # NEW: ρ_bound from Gauss's law: ρ_b = ε₀ε_r ∇·E_long - ρ_free
                 # i*k·E_long_k = i*(kx*Ex + ky*Ey + kz*Ez)
-                qdotE = (qx[i] * ExlfromPRho[i, j, k]
-                         + qy[j] * EylfromPRho[i, j, k]
-                         + qz[k] * EzlfromPRho[i, j, k])
+                qdotE = (
+                    qx[i] * ExlfromPRho[i, j, k]
+                    + qy[j] * EylfromPRho[i, j, k]
+                    + qz[k] * EzlfromPRho[i, j, k]
+                )
                 RhoB_k[i, j, k] = ii_val * qdotE / inv_epsr - Rho_k[i, j, k]
 
 
@@ -939,9 +944,11 @@ def ElongfromRho(
                     EzlfromPRho[i, j, k] = (rho_term + P_term) * qz[k]
 
                     # NEW: ρ_bound from Gauss's law: ρ_b = ε₀ε_r ∇·E_long - ρ_free
-                    qdotE = (qx[i] * ExlfromPRho[i, j, k]
-                             + qy[j] * EylfromPRho[i, j, k]
-                             + qz[k] * EzlfromPRho[i, j, k])
+                    qdotE = (
+                        qx[i] * ExlfromPRho[i, j, k]
+                        + qy[j] * EylfromPRho[i, j, k]
+                        + qz[k] * EzlfromPRho[i, j, k]
+                    )
                     RhoB_k[i, j, k] = ii * qdotE / inv_epsr - Rho_k[i, j, k]
 
     RhoBSpec[:] = RhoB_k
@@ -1231,9 +1238,9 @@ class QWArray:
             dgy = np.zeros(Ny, dtype=np.complex128)
             dgz = np.zeros(Nz, dtype=np.complex128)
             for j in range(Ny):
-                dgy[j] = -(ry[j] - self.y0) / (self.ay ** 2) * gy[j]
+                dgy[j] = -(ry[j] - self.y0) / (self.ay**2) * gy[j]
             for k in range(Nz):
-                dgz[k] = -(rz[k] - self.z0) / (self.az ** 2) * gz[k]
+                dgz[k] = -(rz[k] - self.z0) / (self.az**2) * gz[k]
 
             dPxdx = (np.roll(Pxavg, -1) - np.roll(Pxavg, 1)) / (2.0 * dx_val)
 
@@ -1255,9 +1262,12 @@ class QWArray:
             qy_arr = GetKyArray(space)
             qz_arr = GetKzArray(space)
             filt = np.exp(
-                -0.5 * (sigma_x ** 2 * qx_arr[:, np.newaxis, np.newaxis] ** 2
-                         + sigma_y ** 2 * qy_arr[np.newaxis, :, np.newaxis] ** 2
-                         + sigma_z ** 2 * qz_arr[np.newaxis, np.newaxis, :] ** 2)
+                -0.5
+                * (
+                    sigma_x**2 * qx_arr[:, np.newaxis, np.newaxis] ** 2
+                    + sigma_y**2 * qy_arr[np.newaxis, :, np.newaxis] ** 2
+                    + sigma_z**2 * qz_arr[np.newaxis, np.newaxis, :] ** 2
+                )
             )
 
             RhoBSmooth_k = pyfftw.interfaces.numpy_fft.fftn(RhoBSpec.copy())

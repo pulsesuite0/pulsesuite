@@ -87,10 +87,10 @@ class ts:
     the Fortran ``private`` declaration is not enforced in Python.
     """
 
-    t: float   # current time (s)
+    t: float  # current time (s)
     tf: float  # final time (s)
     dt: float  # time step (s)
-    n: int     # current time index
+    n: int  # current time index
 
     # ── non-trivial derived quantities ──────────────────────────────────────
 
@@ -125,7 +125,7 @@ class ts:
         Nt = self.CalcNt()
         if Nt == 1:
             return np.array([0.0], dtype=_dp)
-        return (self.t + np.arange(Nt, dtype=_dp) * self.dt)
+        return self.t + np.arange(Nt, dtype=_dp) * self.dt
 
     def GetOmegaArray(self) -> NDArray[_dp]:
         r"""Return angular-frequency grid conjugate to the time axis.
@@ -236,9 +236,7 @@ except ImportError:  # pragma: no cover
     _c0_val: float = 2.99792458e8
 
 
-def ValidateTimeStep(
-    time: ts, dx: float, dy: float, dz: float, eps_r: float
-) -> dict:
+def ValidateTimeStep(time: ts, dx: float, dy: float, dz: float, eps_r: float) -> dict:
     r"""Validate the time step against CFL and physics constraints.
 
     CFL condition for 3-D PSTD:
@@ -317,10 +315,10 @@ def readtimeparams_sub(u, time: ts) -> None:
 
     Parameter order (one per line): t, tf, dt, n.
     """
-    time.t  = float(GetFileParam(u))
+    time.t = float(GetFileParam(u))
     time.tf = float(GetFileParam(u))
     time.dt = float(GetFileParam(u))
-    time.n  = int(GetFileParam(u))
+    time.n = int(GetFileParam(u))
 
 
 def ReadTimeParams(cmd: str, time: ts) -> None:

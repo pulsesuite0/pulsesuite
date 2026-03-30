@@ -105,11 +105,11 @@ class ps:
     """
 
     lambda_: float  # vacuum wavelength (m)
-    Amp: float      # peak amplitude (V/m)
-    Tw: float       # pulse width parameter (s)
-    Tp: float       # peak-crossing time (s)
-    chirp: float    # chirp coefficient (rad/s²)
-    pol: int = 0    # polarisation index
+    Amp: float  # peak amplitude (V/m)
+    Tw: float  # pulse width parameter (s)
+    Tp: float  # peak-crossing time (s)
+    chirp: float  # chirp coefficient (rad/s²)
+    pol: int = 0  # polarisation index
     w0: float = float("inf")  # beam waist radius (m); inf = plane wave
 
     # ── temporal / spectral properties ──────────────────────────────────────
@@ -434,10 +434,10 @@ def readpulseparams_sub(u, pulse: ps) -> None:
     ``pol`` is optional and is not present in the Fortran parameter file.
     """
     pulse.lambda_ = float(GetFileParam(u))
-    pulse.Amp     = float(GetFileParam(u))
-    pulse.Tw      = float(GetFileParam(u))
-    pulse.Tp      = float(GetFileParam(u))
-    pulse.chirp   = float(GetFileParam(u))
+    pulse.Amp = float(GetFileParam(u))
+    pulse.Tw = float(GetFileParam(u))
+    pulse.Tp = float(GetFileParam(u))
+    pulse.chirp = float(GetFileParam(u))
 
 
 def ReadPulseParams(cmd: str, pulse: ps) -> None:
@@ -455,7 +455,9 @@ def writepulseparams_sub(u, pulse: ps) -> None:
     u.write(f"{_PFRMTA.format(pulse.lambda_)} : The pulse wavelength. (m)\n")
     u.write(f"{_PFRMTA.format(pulse.Amp)}     : The pulse amplitude. (V/m)\n")
     u.write(f"{_PFRMTA.format(pulse.Tw)}      : The pulsewidth. (s)\n")
-    u.write(f"{_PFRMTA.format(pulse.Tp)}      : The time the pulse crosses the origin. (s)\n")
+    u.write(
+        f"{_PFRMTA.format(pulse.Tp)}      : The time the pulse crosses the origin. (s)\n"
+    )
     u.write(f"{_PFRMTA.format(pulse.chirp)}   : The pulse chirp constant. (rad/s^2)\n")
 
 

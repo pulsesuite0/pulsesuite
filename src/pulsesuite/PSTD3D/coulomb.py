@@ -559,7 +559,7 @@ def CalcCoulombArrays(
 
     for k in range(NQ):
         if k % 10 == 0:
-            print(f"  Progress: {k}/{NQ} ({100*k/NQ:.1f}%)")
+            print(f"  Progress: {k}/{NQ} ({100 * k / NQ:.1f}%)")
         eh[k] = prefactor * Vint(Qy[k], y, alphae, alphah, Delta0)
         ee[k] = prefactor * Vint(Qy[k], y, alphae, alphae, Delta0)
         hh[k] = prefactor * Vint(Qy[k], y, alphah, alphah, Delta0)

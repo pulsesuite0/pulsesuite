@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+title: "PulseSuite: Simulation suite for ultrafast laser-matter interactions"
+message: "If you use this software in published research, please cite it as below."
+type: software
+license: LGPL-3.0-or-later
+repository-code: "https://github.com/pulsesuite0/pulsesuite"
+version: 0.1.0
+date-released: "2025-01-01"
+authors:
+  - family-names: Sah
+    given-names: Rahul R.
+    email: f1rahulranjan@gmail.com
+  - family-names: Hatten
+    given-names: Emily S.
+  - family-names: Gulley
+    given-names: Jeremy R.
+    affiliation: Furman University
+keywords:
+  - semiconductor
+  - quantum-wire
+  - quantum-well
+  - bloch-equations
+  - PSTD
+  - ultrafast-laser
+  - computational-physics
+  - simulation
+abstract: >-
+  PulseSuite is a Python port of production Fortran simulation tools
+  for modeling ultrafast laser-matter interactions in semiconductor
+  quantum structures. It couples Semiconductor Bloch Equations (SBEs)
+  with Pseudo-Spectral Time Domain (PSTD) electromagnetic field
+  propagation, accelerated via NumPy, Numba JIT, pyFFTW, and optional
+  CUDA support.

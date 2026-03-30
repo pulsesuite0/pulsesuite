@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "pulsesuite"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = { text = "LGPL-3.0-or-later" }
 description = "PulseSuite: Simulation suite for ultrafast laser-matter interactions in semiconductor quantum structures"
 version = "0.1.0"
 authors = [
@@ -34,7 +34,7 @@ keywords = [
 ]
 
 classifiers = [
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Education",

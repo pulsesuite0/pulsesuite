@@ -9,10 +9,10 @@ If you use PulseSuite in your research, please cite it as follows:
   title  = {PulseSuite: Simulation suite for ultrafast laser-matter interactions},
   author = {Sah, Rahul R. and Hatten, Emily S. and Gulley, Jeremy R.},
   year   = {2025},
-  url    = {https://github.com/rahulranjansah/pulsesuite}
+  url    = {https://github.com/pulsesuite0/pulsesuite}
 }
 ```
 
 ## APA
 
-Sah, R. R., Hatten, E. S., & Gulley, J. R. (2025). *PulseSuite: Simulation suite for ultrafast laser-matter interactions* [Computer software]. https://github.com/rahulranjansah/pulsesuite
+Sah, R. R., Hatten, E. S., & Gulley, J. R. (2025). *PulseSuite: Simulation suite for ultrafast laser-matter interactions* [Computer software]. https://github.com/pulsesuite0/pulsesuite
