@@ -1,32 +1,10 @@
-"""typepulse — Pulse parameter structure for PSTD3D Maxwell solver.
+"""typepulse — Laser pulse parameter structure.
 
-Port of Fortran ``typepulse.f90``.
-
-The ``ps`` dataclass holds the six scalars that describe a laser pulse.
-Derived temporal/spectral/spatial quantities are methods on the class;
-trivial accessors and file-I/O functions are module-level wrappers for
-Fortran call-site compatibility.
-
-Notes on Fortran divergences
------------------------------
-1. ``lambda`` → ``lambda_``: ``lambda`` is a reserved keyword in Python.
-   Module-level ``GetLambda`` / ``SetLambda`` still provide the Fortran API.
-
-2. ``SetLambda`` type fix: the Fortran source declares the input as
-   ``integer`` (a bug — the field is ``real(dp)``).  The Python port accepts
-   ``float`` as intended.
-
-3. ``CalcRayleigh`` correction: the Fortran source mistakenly substitutes
-   ``CalcOmega0(pulse)`` (angular carrier frequency ω₀, units rad/s) for the
-   beam waist radius w₀ (units m) in ``z_R = π w₀² / λ``.  This yields a
-   dimensionally incorrect result.  The Python port requires ``w₀`` to be
-   passed explicitly:
-
-       CalcRayleigh(pulse, w0)   # w0 in metres
-       CalcCurvature(pulse, x, w0)
-       CalcGouyPhase(pulse, x, w0)
-
-   Callers that relied on the (broken) Fortran behaviour must be updated.
+Fortran divergences:
+  - ``lambda`` → ``lambda_`` (Python reserved keyword).
+  - ``SetLambda`` accepts float (Fortran source had integer — a bug).
+  - ``CalcRayleigh(pulse, w0)`` requires explicit w0; Fortran source
+    mistakenly used omega0 in place of w0 in z_R = pi*w0^2/lambda.
 """
 
 from __future__ import annotations
@@ -48,11 +26,6 @@ _twopi: float = 2.0 * np.pi
 LOGVERBOSE: int = 2  # mirrors Fortran LOGVERBOSE constant
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Local stubs (mirror Fortran fileio / logger dependencies)
-# ──────────────────────────────────────────────────────────────────────────────
-
-
 def GetFileParam(f) -> float:
     """Read one numeric parameter from an open text file handle."""
     line = f.readline()
@@ -70,11 +43,6 @@ def GetFileParam(f) -> float:
 def GetLogLevel() -> int:
     """Return the current logging verbosity level (stub: always 0)."""
     return 0
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# ps — pulse parameter dataclass
-# ──────────────────────────────────────────────────────────────────────────────
 
 
 @dataclass
@@ -111,8 +79,6 @@ class ps:
     chirp: float  # chirp coefficient (rad/s²)
     pol: int = 0  # polarisation index
     w0: float = float("inf")  # beam waist radius (m); inf = plane wave
-
-    # ── temporal / spectral properties ──────────────────────────────────────
 
     def CalcK0(self) -> float:
         r"""Carrier wavenumber :math:`k_0 = 2\pi / \lambda` (rad/m)."""
@@ -155,8 +121,6 @@ class ps:
         For an unchirped Gaussian this equals :math:`\sqrt{8\ln 2} \approx 2.355`.
         """
         return self.CalcDeltaOmega() * self.CalcTau()
-
-    # ── spatial / Gaussian-beam properties ──────────────────────────────────
 
     def CalcRayleigh(self, w0: float) -> float:
         r"""Rayleigh range :math:`z_R = \pi w_0^2 / \lambda` (m).
@@ -203,8 +167,6 @@ class ps:
             Beam waist radius (m).
         """
         return np.arctan(x / self.CalcRayleigh(w0))
-
-    # ── field evaluation ─────────────────────────────────────────────────────
 
     def PulseFieldXT(self, x: float, t: float) -> complex:
         r"""Complex pulse electric field at position ``x``, time ``t``.
@@ -271,117 +233,87 @@ class ps:
         )
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Module-level Fortran API — trivial accessors
-# ──────────────────────────────────────────────────────────────────────────────
-
-
 def GetLambda(pulse: ps) -> float:
-    """Return the carrier wavelength (m)."""
     return pulse.lambda_
 
 
 def GetAmp(pulse: ps) -> float:
-    """Return the peak amplitude (V/m)."""
     return pulse.Amp
 
 
 def GetTw(pulse: ps) -> float:
-    """Return the pulse width parameter (s)."""
     return pulse.Tw
 
 
 def GetTp(pulse: ps) -> float:
-    """Return the peak-crossing time (s)."""
     return pulse.Tp
 
 
 def GetChirp(pulse: ps) -> float:
-    """Return the chirp coefficient (rad/s²)."""
     return pulse.chirp
 
 
 def GetPol(pulse: ps) -> int:
-    """Return the polarisation index."""
     return pulse.pol
 
 
 def SetLambda(pulse: ps, lambda_: float) -> None:
-    """Set the carrier wavelength (m).
-
-    Notes
-    -----
-    The Fortran source declared the argument as ``integer`` (a bug);
-    this Python port accepts ``float`` as intended.
+    """Notes: Fortran declared the argument as ``integer`` (a bug);
+    this port accepts ``float`` as intended.
     """
     pulse.lambda_ = float(lambda_)
 
 
 def SetAmp(pulse: ps, Amp: float) -> None:
-    """Set the peak amplitude (V/m)."""
     pulse.Amp = Amp
 
 
 def SetTw(pulse: ps, Tw: float) -> None:
-    """Set the pulse width parameter (s)."""
     pulse.Tw = Tw
 
 
 def SetTp(pulse: ps, Tp: float) -> None:
-    """Set the peak-crossing time (s)."""
     pulse.Tp = Tp
 
 
 def SetChirp(pulse: ps, chirp: float) -> None:
-    """Set the chirp coefficient (rad/s²)."""
     pulse.chirp = chirp
 
 
 def SetPol(pulse: ps, pol: int) -> None:
-    """Set the polarisation index."""
     pulse.pol = pol
 
 
 def GetW0(pulse: ps) -> float:
-    """Return the beam waist radius (m).  ``inf`` means plane-wave mode."""
+    """inf means plane-wave mode."""
     return pulse.w0
 
 
 def SetW0(pulse: ps, w0: float) -> None:
-    """Set the beam waist radius (m)."""
     pulse.w0 = w0
 
 
-# ── non-trivial module-level wrappers ────────────────────────────────────────
-
-
 def CalcK0(pulse: ps) -> float:
-    """Carrier wavenumber.  Delegates to ``pulse.CalcK0()``."""
     return pulse.CalcK0()
 
 
 def CalcFreq0(pulse: ps) -> float:
-    """Carrier frequency.  Delegates to ``pulse.CalcFreq0()``."""
     return pulse.CalcFreq0()
 
 
 def CalcOmega0(pulse: ps) -> float:
-    """Carrier angular frequency.  Delegates to ``pulse.CalcOmega0()``."""
     return pulse.CalcOmega0()
 
 
 def CalcTau(pulse: ps) -> float:
-    """1/e intensity half-width.  Delegates to ``pulse.CalcTau()``."""
     return pulse.CalcTau()
 
 
 def CalcDeltaOmega(pulse: ps) -> float:
-    """Spectral half-width.  Delegates to ``pulse.CalcDeltaOmega()``."""
     return pulse.CalcDeltaOmega()
 
 
 def CalcTime_BandWidth(pulse: ps) -> float:
-    """Time–bandwidth product.  Delegates to ``pulse.CalcTime_BandWidth()``."""
     return pulse.CalcTime_BandWidth()
 
 
@@ -419,10 +351,6 @@ def PulseField3D(x: float, y: float, z: float, t: float, pulse: ps) -> float:
     """
     return pulse.PulseField3D(x, y, z, t)
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# File I/O  (mirrors Fortran ReadPulseParams / WritePulseParams)
-# ──────────────────────────────────────────────────────────────────────────────
 
 _PFRMTA = "{:25.15E}"
 

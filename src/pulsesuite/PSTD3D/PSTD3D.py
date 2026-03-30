@@ -1,53 +1,16 @@
 r"""PSTD3D — 3-D pseudo-spectral time-domain Maxwell propagator.
 
-Port of Fortran ``PSTD3D.F90``.
+Leapfrog time-stepping in Fourier space:
 
-Solves the 3-D Maxwell equations in Fourier space using a leapfrog
-time-stepping scheme with absorbing boundaries and source injection.
-
-Time-stepping equations
-~~~~~~~~~~~~~~~~~~~~~~~
 .. math::
 
-    \mathbf{E}^{n+1} = \mathbf{E}^n
-        + i\,v^2 \Delta t\,(\mathbf{k} \times \mathbf{B}^n)
-        - \mu_0 v^2 \Delta t\,\mathbf{J}^n
+    \mathbf{E}^{n+1} = \mathbf{E}^n + i\,v^2 \Delta t\,(\mathbf{k} \times \mathbf{B}^n) - \mu_0 v^2 \Delta t\,\mathbf{J}^n
 
-    \mathbf{B}^{n+1} = \mathbf{B}^n
-        - i\,\Delta t\,(\mathbf{k} \times \mathbf{E}^{n+1})
+    \mathbf{B}^{n+1} = \mathbf{B}^n - i\,\Delta t\,(\mathbf{k} \times \mathbf{E}^{n+1})
 
-where :math:`v = c_0 / \sqrt{\varepsilon_r}` and the spectral curl
-:math:`\mathbf{k} \times` replaces spatial derivatives exactly
-(no truncation error — only time discretisation is approximate).
-
-Architecture
-------------
-Hybrid: a ``PSTD3DPropagator`` class holds simulation state (fields,
-source profile, output directory) while the spectral update kernels
-(``UpdateE3D``, ``UpdateB3D``) are standalone vectorised functions.
-This mirrors the Fortran layout where the ``program`` block holds state
-and the ``contains`` subroutines do the math.
-
-Source modes
-~~~~~~~~~~~~
-- ``'soft'`` — Additive soft source (Schneider 2010, Ch. 5; Taflove &
-  Hagness 2005, Ch. 5).  Injects Ey and Bz each step via a narrow
-  normalised Gaussian profile.
-- ``'ic'`` — Initial condition.  Seeds the full pulse waveform directly
-  into Ey and Bz at t=t0 (Yee 1966; Munro *et al.* 2014).
-
-Boundary types
-~~~~~~~~~~~~~~
-- ``'mask'`` — Multiplicative masking absorber (Kosloff & Kosloff 1986).
-  Unconditionally stable.  Default.
-- ``'cpml'`` — Convolutional PML (Chen & Wang 2013).  Higher absorption
-  but may be unstable on anisotropic grids.
-
-Notes
------
-- Not thread-safe when using the module-level ``_state`` dict or the
-  ``_default`` propagator (same as Fortran).
-- ``calc_j`` callback defaults to a no-op (Jx = Jy = Jz = 0).
+Sources: ``'soft'`` (additive, Schneider 2010) or ``'ic'`` (initial condition).
+Boundaries: ``'mask'`` (Kosloff & Kosloff 1986) or ``'cpml'`` (Chen & Wang 2013).
+Not thread-safe.
 """
 
 from __future__ import annotations
@@ -69,10 +32,6 @@ _dc = np.complex128
 _ii = 1j
 _twopi = 2.0 * np.pi
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Standalone spectral update kernels (pure functions — no state)
-# ──────────────────────────────────────────────────────────────────────────────
 
 
 def UpdateE3D(
@@ -186,12 +145,7 @@ def InitializeFields(
     NDArray[_dc],
     NDArray[_dc],
 ]:
-    """Allocate and zero-fill all nine field component arrays.
-
-    Returns
-    -------
-    Ex, Ey, Ez, Bx, By, Bz, Jx, Jy, Jz : ndarray (Nx, Ny, Nz), complex128
-    """
+    """Allocate zero-filled (Nx, Ny, Nz) complex128 arrays for Ex, Ey, Ez, Bx, By, Bz, Jx, Jy, Jz."""
     shape = (Nx, Ny, Nz)
     return tuple(np.zeros(shape, dtype=_dc) for _ in range(9))
 
@@ -317,18 +271,10 @@ def SeedInitialCondition(
     print(f"  IC seed: grid length   = {(x[-1] - x[0]) * 1e6:.4f} um")
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Null CalcJ callback (default when no SBE coupling)
-# ──────────────────────────────────────────────────────────────────────────────
-
 
 def _calc_j_noop(space, time, Ex, Ey, Ez, Jx, Jy, Jz) -> None:  # noqa: N802
-    """No-op current density source (Jx = Jy = Jz = 0)."""
+    pass
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# PSTD3DPropagator
-# ──────────────────────────────────────────────────────────────────────────────
 
 
 class PSTD3DPropagator:
@@ -959,9 +905,6 @@ class PSTD3DPropagator:
         np.save(self.simdir / "grid_z.npy", GetZArray(self.space))
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Module-level Fortran API wrapper
-# ──────────────────────────────────────────────────────────────────────────────
 
 _default: PSTD3DPropagator | None = None  # NOT thread-safe
 

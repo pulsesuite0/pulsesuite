@@ -25,4 +25,5 @@ examples/03_coulomb.myst.md
 examples/04_phonons.myst.md
 examples/05_optics.myst.md
 examples/06_transport.myst.md
+examples/07_sbe_simulations.myst.md
 ```

@@ -1,63 +1,18 @@
 r"""tfsf — Additive soft-source injection for PSTD3D Maxwell solver.
 
-Port of the ``InitializeTFSF`` and ``UpdateTFSC`` subroutines contained
-in Fortran ``PSTD3D.F90``.
-
-Theory & Motivation
--------------------
-In PSTD, spatial derivatives are computed via FFT (Liu 1997, *Microwave
-Opt. Technol. Lett.* 15:158).  The FFT treats the computational domain as
-spatially periodic and each derivative depends on **all** grid points
-simultaneously.  This has two consequences for source injection:
-
-(a) A replacement / blend source that forces field values in a localised
-    region creates discontinuities in the field's spatial derivatives at
-    the blend boundary.  The spectral method amplifies these into Gibbs
-    oscillations that wrap around the periodic domain (Munro *et al.*
-    2015, *J. Biomed. Opt.* 20:095007; Jerri 1998, *The Gibbs Phenomenon
-    in Fourier Analysis*).
-
-(b) Even smooth blend windows (super-Gaussian) still create a
-    near-discontinuity in :math:`d^n E/dx^n` at the transition zone,
-    producing high-*k* spectral content that aliases on the discrete grid.
-
-**Fix**: Additive soft source (Schneider 2010, *Understanding the FDTD
-Method*, Sec. 5.5; Taflove & Hagness 2005, *Computational
-Electrodynamics*, Ch. 5).  Instead of replacing field values, we **add**
-the incident field at each time step:
+Adds incident field via smooth Gaussian profile to avoid Gibbs oscillations
+from spectral derivatives (Liu 1997; Schneider 2010, Sec. 5.5):
 
 .. math::
 
     E(\mathbf{r}) = E_{\text{prop}}(\mathbf{r})
                    + S(x)\,E_{\text{inc}}(\mathbf{r}, t)
 
-where :math:`S(x)` is a narrow, smooth (band-limited) normalised Gaussian
-source profile.  This generates outgoing waves from the source location
-without creating derivative discontinuities.
+Unidirectional +x injection via impedance-matched Ey and Bz
+(Taflove & Hagness 2005, Sec. 5.2.1).
 
-Unidirectional injection
-~~~~~~~~~~~~~~~~~~~~~~~~
-A soft source alone radiates in both :math:`+x` and :math:`-x` directions.
-To produce a unidirectional :math:`+x` wave, the caller injects both
-:math:`E_y` and :math:`B_z` with the plane-wave impedance ratio
-:math:`E_y / B_z = v` (Taflove & Hagness 2005, Sec. 5.2.1).
-
-Incident field
-~~~~~~~~~~~~~~
-.. math::
-
-    E_{\text{inc}}(x,t) = A\,G(y,z)\,
-        \exp\!\left(-\tau^2 / \tau_G^2\right)\,
-        \cos(\omega_0 \tau + \chi \tau^2)
-
-    \tau = t - x/v - T_p  \quad (\text{retarded time})
-
-Cost: 1 IFFT + 1 FFT per call (2 FFTs total).
-
-Architecture
-------------
-Standalone functions (no class needed — the only state is the 1-D
-source profile array, returned by ``InitializeTFSF``).
+References: Liu (1997) MOTL 15:158; Schneider (2010) Ch. 5;
+Taflove & Hagness (2005) Ch. 5; Munro et al. (2015) JBO 20:095007.
 """
 
 from __future__ import annotations
@@ -76,10 +31,6 @@ _dp = np.float64
 _dc = np.complex128
 _twopi = 2.0 * np.pi
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# InitializeTFSF
-# ──────────────────────────────────────────────────────────────────────────────
 
 
 def InitializeTFSF(space, pulse) -> NDArray[_dp]:
@@ -136,10 +87,6 @@ def InitializeTFSF(space, pulse) -> NDArray[_dp]:
     tfsf = np.exp(-0.5 * ((x - xp) / sigma_src) ** 2) / (sigma_src * np.sqrt(_twopi))
     return tfsf
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# UpdateTFSC
-# ──────────────────────────────────────────────────────────────────────────────
 
 
 def UpdateTFSC(

@@ -353,7 +353,7 @@ def dumplens(lens: nlls, level: int | None = None) -> None:
 # ----------------------------------------------------------------------
 # Math micro-kernel: calculate 1 - sqrt(1 - x)
 # ----------------------------------------------------------------------
-@njit(float64(float64), fastmath=True, cache=True)
+@njit(float64(float64), fastmath=False, cache=True)
 def BillsMagic(x: float) -> float:
     if x > 0.2:
         return 1.0 - math.sqrt(1.0 - x)

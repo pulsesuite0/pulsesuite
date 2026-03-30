@@ -816,7 +816,7 @@ def CalcH(Meh, Wee, Whh, C, D, p, VC, Heh, Hee, Hhh):
         )
 
 
-@jit(nopython=True, cache=True, parallel=True, fastmath=True)
+@jit(nopython=True, cache=True, parallel=True, fastmath=False)
 def _CalcH_jit(
     Meh, Wee, Whh, C, D, p, VC, Heh, Hee, Hhh, Nk, Ee, Eh, gap, excitons, lf, freepot
 ):
@@ -1949,7 +1949,7 @@ def dpdt(C, D, p, Heh, Hee, Hhh, GamE, GamH, OffP):
             return _dpdt_fallback(C, D, p, Heh, Hee, Hhh, GamE, GamH, OffP)
 
 
-@jit(nopython=True, cache=True, parallel=True, fastmath=True)
+@jit(nopython=True, cache=True, parallel=True, fastmath=False)
 def _dpdt_jit(C, D, p, Heh, Hee, Hhh, GamE, GamH, OffP, ii_val, hbar_val):
     """JIT-compiled dpdt calculation."""
     Nk = p.shape[0]
@@ -2316,7 +2316,7 @@ def dCdt(Cee, Dhh, Phe, Heh, Hee, Hhh, GamE, GamH, OffE):
             return _dCdt_fallback(Cee, Dhh, Phe, Heh, Hee, Hhh, GamE, GamH, OffE)
 
 
-@jit(nopython=True, cache=True, parallel=True, fastmath=True)
+@jit(nopython=True, cache=True, parallel=True, fastmath=False)
 def _dCdt_jit(Cee, Dhh, Phe, Heh, Hee, Hhh, GamE, GamH, OffE, ii_val, hbar_val):
     """JIT-compiled dCdt calculation."""
     Nk = Cee.shape[0]
@@ -2614,7 +2614,7 @@ def dDdt(Cee, Dhh, Phe, Heh, Hee, Hhh, GamE, GamH, OffH):
             return _dDdt_fallback(Cee, Dhh, Phe, Heh, Hee, Hhh, GamE, GamH, OffH)
 
 
-@jit(nopython=True, cache=True, parallel=True, fastmath=True)
+@jit(nopython=True, cache=True, parallel=True, fastmath=False)
 def _dDdt_jit(Cee, Dhh, Phe, Heh, Hee, Hhh, GamE, GamH, OffH, ii_val, hbar_val):
     """JIT-compiled dDdt calculation."""
     Nk = Dhh.shape[0]
@@ -3172,7 +3172,7 @@ def CalcXqw(iq, w, kr, fe, fh, Ee, Eh, gap, area, game, gamh, dcv):
         return _CalcXqw_fallback(iq, w, kr, fe, fh, Ee, Eh, gap, area, game, gamh, dcv)
 
 
-@jit(nopython=True, fastmath=True, cache=True)
+@jit(nopython=True, fastmath=False, cache=True)
 def _CalcXqw_jit(
     iq,
     w,
@@ -3723,7 +3723,7 @@ def GetArrays(x, qx, kx):
     _NQ0 = GetArray0Index(qx)
 
 
-@jit(nopython=True, parallel=True, fastmath=True, cache=True)
+@jit(nopython=True, parallel=True, fastmath=True, cache=True)  # fastmath OK: integer index arithmetic, no accumulation
 def _MakeKKP_jit(Nk, kr, dkr, NQ0, kkp):
     """JIT-compiled parallel version of MakeKKP computation."""
     from numba import prange

@@ -592,7 +592,7 @@ def CalcJfx(RhoNew, RhoPrev, dt, dx):
     return CalcJfx_result
 
 
-@jit(nopython=True, parallel=True, fastmath=True, cache=True)
+@jit(nopython=True, parallel=True, fastmath=False, cache=True)
 def _ElongfromRho_loop_jit(
     Rho_k,
     Px,
@@ -697,7 +697,7 @@ def _ElongfromRho_loop_jit(
                 RhoB_k[i, j, k] = ii_val * qdotE / inv_epsr - Rho_k[i, j, k]
 
 
-@jit(nopython=True, parallel=True, fastmath=True, cache=True)
+@jit(nopython=True, parallel=True, fastmath=True, cache=True)  # fastmath OK: element-wise multiply, no accumulation
 def _QWPlacement_jit(Fwire, gx, gy, gz, Fgrid, Nx, Ny, Nz):
     """
     JIT-compiled parallel version of QWPlacement loop.

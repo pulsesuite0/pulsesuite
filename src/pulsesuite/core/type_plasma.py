@@ -1,25 +1,7 @@
-"""
-Port of Fortran module `type_plasma` ➜ Python
-===========================================
-High‑performance, HPC‑ready rewrite that preserves the original Fortran naming
-conventions one‑for‑one while exploiting Python/NumPy ergonomics.
+"""type_plasma — Plasma coefficient storage and I/O.
 
-*   Structure `plasma_coefficients` → class ``plasma_coefficients`` (slots for
-    cache‑friendliness; dtype preserved as float64/int64).
-*   Getter / setter routines exported with the **exact** original names
-    (``GetMass``, ``SetMass`` …) so downstream code can transition painlessly.
-*   Human‑readable parameter files (same layout as the Fortran writer) handled
-    by ``readplasmaparams_sub`` / ``writeplasmaparams_sub``.
-*   Rigorous runtime dtype checking via ``@with_guardrails`` decorator.
-*   Ready for further acceleration (e.g. Numba) if bulk processing of plasma
-    parameter arrays becomes a bottleneck.
-
-Assumptions
------------
-*   All project‑wide constants live in ``constants.py`` (``dp = np.float64``).
-*   A lightweight ``logger`` module provides ``Logger.getInstance().error``.
-*   No Fortran‑style unit numbers – we just pass an already‑opened `TextIO` or
-    a *path* (the helper takes care of opening).
+``plasma_coefficients`` dataclass with Fortran-compatible getters/setters
+(GetMass, SetMass, etc.) and human-readable parameter file I/O.
 """
 
 from __future__ import annotations

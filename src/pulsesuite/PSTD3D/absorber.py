@@ -1,68 +1,15 @@
-r"""absorber — Masking absorber boundary conditions for PSTD Maxwell solver.
-
-Port of Fortran ``absorber.f90``.
-
-Implements absorbing boundary conditions via multiplicative masking
-(Kosloff & Kosloff 1986).  After each field update, the field is
-multiplied by a pre-computed mask:
+r"""absorber — Multiplicative masking absorber (Kosloff & Kosloff 1986).
 
 .. math::
 
     F^{n+1}(\mathbf{r}) = F^{n+1}_{\text{Maxwell}}(\mathbf{r})
-                          \times \text{mask}(\mathbf{r})
+                          \times \exp(-\gamma_{\max}\,\rho^m\,\Delta t)
 
-where :math:`\text{mask} = 1` in the interior and :math:`\text{mask} < 1`
-in the absorbing layer.  This is equivalent to adding a negative imaginary
-potential (NIP):
+Unconditionally stable (|mask| <= 1, no recursive state).
+Polynomial grading with m=3 (Taflove & Hagness 2005, Sec. 7.6).
+Module-level state, not thread-safe.
 
-.. math::
-
-    \frac{\partial F}{\partial t} = [\text{Maxwell terms}]
-                                    - \gamma(\mathbf{r})\,F
-
-which causes exponential decay in the absorbing region.
-
-Why this is stable
-~~~~~~~~~~~~~~~~~~
-The mask satisfies :math:`|\text{mask}| \le 1` everywhere, so the field
-amplitude can only decrease or stay the same at each step.  There is no
-recursive state (unlike CPML's :math:`\psi` fields), so there is **no
-mechanism for energy growth**.  This is **unconditionally stable** for any
-:math:`\Delta t`, any grid aspect ratio, any CFL number.
-
-Absorption profile
-~~~~~~~~~~~~~~~~~~
-Polynomial grading:
-
-.. math::
-
-    \gamma(\rho) = \gamma_{\max}\,\rho^m
-
-where :math:`\rho` is the normalised distance from the interior edge
-(0 at interior, 1 at outermost cell) and :math:`m = 3` is the grading
-order (Taflove & Hagness 2005, Sec. 7.6).
-
-The mask value at each point:
-
-.. math::
-
-    \text{mask}(x) = \exp(-\gamma(x)\,\Delta t)
-
-Using :math:`\exp` instead of :math:`(1 - \gamma \Delta t)` avoids the
-need for :math:`\gamma \Delta t < 1` (Chen 2024, Eq. 7).
-
-Architecture
-------------
-Module-level state (Fortran ``SAVE`` variables).  Not thread-safe.
-
-References
-----------
-- Kosloff R, Kosloff D (1986) "Absorbing boundaries for wave propagation
-  problems." *J Comput Phys* 63:363-376.
-- Chen K (2024) "A General PSTD Method to Solve Quantum Scattering..."
-  arXiv:2403.04053v2.  Eqs. 2-7.
-- Taflove A, Hagness S (2005) *Computational Electrodynamics*, 3rd ed.,
-  Artech House.  Sec. 7.6 (polynomial grading).
+References: Kosloff & Kosloff (1986) JCP 63:363; Chen (2024) arXiv:2403.04053v2.
 """
 
 from __future__ import annotations
@@ -73,8 +20,7 @@ from numpy.typing import NDArray
 _dp = np.float64
 _dc = np.complex128
 
-# === Tunable parameters (module-level constants) ===
-#
+# Tunable parameters
 # U0_per_step: fraction of field absorbed per time step at the outermost
 #   PML cell.  mask_edge = 1 - U0_per_step.  Over N_cross steps
 #   (PML crossing time), total attenuation is (1 - U0_per_step)^N_cross.
@@ -103,21 +49,7 @@ _state = {
 
 
 def CalcNPML(N: int) -> int:
-    """Compute absorbing layer thickness for a given grid dimension.
-
-    For axes with N <= 4 (effectively 1D simulation), no absorption
-    is applied (npml = 0, mask = 1).
-
-    Parameters
-    ----------
-    N : int
-        Number of grid points along one axis.
-
-    Returns
-    -------
-    int
-        Number of PML cells per side.
-    """
+    """Absorbing layer thickness: 0 if N <= 4 (1D), else scaled from grid size."""
     if N <= 4:
         return 0
 
@@ -225,20 +157,7 @@ def ApplyAbsorber_E(
     Ey: NDArray[_dc],
     Ez: NDArray[_dc],
 ) -> None:
-    """Apply absorbing mask to E fields (in-place).
-
-    Called **after** the spectral Maxwell update for E.
-
-    Algorithm:
-        1. IFFT E fields to real space
-        2. Multiply by pre-computed mask (element-wise)
-        3. FFT back to k-space
-
-    Parameters
-    ----------
-    Ex, Ey, Ez : ndarray (Nx, Ny, Nz), complex128
-        Electric field components in k-space.  Modified in-place.
-    """
+    """Apply absorbing mask to E fields in-place (spectral -> real -> mask -> spectral)."""
     from ..core.fftw import fft_3D, ifft_3D
 
     mask = _state["mask"]
@@ -261,16 +180,7 @@ def ApplyAbsorber_B(
     By: NDArray[_dc],
     Bz: NDArray[_dc],
 ) -> None:
-    """Apply absorbing mask to B fields (in-place).
-
-    Called **after** the spectral Maxwell update for B.
-    Same algorithm as ``ApplyAbsorber_E``.
-
-    Parameters
-    ----------
-    Bx, By, Bz : ndarray (Nx, Ny, Nz), complex128
-        Magnetic field components in k-space.  Modified in-place.
-    """
+    """Apply absorbing mask to B fields in-place (spectral -> real -> mask -> spectral)."""
     from ..core.fftw import fft_3D, ifft_3D
 
     mask = _state["mask"]

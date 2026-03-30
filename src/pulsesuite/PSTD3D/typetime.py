@@ -1,22 +1,8 @@
 """typetime — Time grid structure for PSTD3D Maxwell solver.
 
-Port of Fortran ``typetime.f90`` (``updatedPSTD3D/newest/typetime.f90``).
-
-The ``ts`` dataclass holds the four scalars that define a simulation's time
-axis.  Non-trivial derived quantities (array generation, conjugate grid) are
-methods on the dataclass; trivial accessors are module-level functions that
-mirror the Fortran subroutine/function names for API parity.
-
-Architecture
-------------
-- ``@dataclass ts``: plain storage (t, tf, dt, n) — mirrors Fortran ``type ts``
-- Hybrid: non-trivial computations (CalcNt, GetTArray, GetOmegaArray,
-  GetdOmega, UpdateT, UpdateN) are methods; trivial getters/setters remain
-  as module-level functions for Fortran call-site compatibility.
-- File I/O: Python ``open()`` context manager replaces Fortran ``new_unit()``
-  / ``open`` / ``close``.
-- ``initialize_field`` (private in Fortran, OpenMP-parallel zero-fill): omitted;
-  use ``numpy.zeros`` directly.
+Dataclass ``ts`` holds (t, tf, dt, n). Derived quantities (GetTArray,
+GetOmegaArray, ValidateTimeStep) are methods; trivial getters/setters
+are module-level functions for Fortran API parity.
 """
 
 from __future__ import annotations
@@ -31,11 +17,6 @@ _dp = np.float64
 _twopi: float = 2.0 * np.pi
 
 LOGVERBOSE: int = 2  # mirrors Fortran LOGVERBOSE constant
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Local stubs (mirror Fortran fileio / logger dependencies)
-# ──────────────────────────────────────────────────────────────────────────────
 
 
 def GetFileParam(f) -> float:
@@ -59,11 +40,6 @@ def GetFileParam(f) -> float:
 def GetLogLevel() -> int:
     """Return the current logging verbosity level (stub: always 0)."""
     return 0
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# ts — time grid dataclass
-# ──────────────────────────────────────────────────────────────────────────────
 
 
 @dataclass
@@ -91,8 +67,6 @@ class ts:
     tf: float  # final time (s)
     dt: float  # time step (s)
     n: int  # current time index
-
-    # ── non-trivial derived quantities ──────────────────────────────────────
 
     def CalcNt(self) -> int:
         """Number of time steps remaining: floor((tf − t) / dt).
@@ -150,85 +124,61 @@ class ts:
         return _twopi / (self.CalcNt() * self.dt)
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Module-level Fortran API — trivial accessors
-# ──────────────────────────────────────────────────────────────────────────────
-
-
 def GetT(time: ts) -> float:
-    """Return the current simulation time (s)."""
     return time.t
 
 
 def GetTf(time: ts) -> float:
-    """Return the final simulation time (s)."""
     return time.tf
 
 
 def GetDt(time: ts) -> float:
-    """Return the time step (s)."""
     return time.dt
 
 
 def GetN(time: ts) -> int:
-    """Return the current time index."""
     return time.n
 
 
 def SetT(time: ts, t: float) -> None:
-    """Set the current simulation time."""
     time.t = t
 
 
 def SetTf(time: ts, tf: float) -> None:
-    """Set the final simulation time."""
     time.tf = tf
 
 
 def SetDt(time: ts, dt: float) -> None:
-    """Set the time step."""
     time.dt = dt
 
 
 def SetN(time: ts, n: int) -> None:
-    """Set the current time index."""
     time.n = n
 
 
-# ── non-trivial module-level wrappers (delegate to ts methods) ───────────────
-
-
 def CalcNt(time: ts) -> int:
-    """Number of time steps remaining.  Delegates to ``time.CalcNt()``."""
     return time.CalcNt()
 
 
 def UpdateT(time: ts, dt: float) -> None:
-    """Advance current time by ``dt``.  Delegates to ``time.UpdateT(dt)``."""
     time.UpdateT(dt)
 
 
 def UpdateN(time: ts, dn: int) -> None:
-    """Advance time index by ``dn``.  Delegates to ``time.UpdateN(dn)``."""
     time.UpdateN(dn)
 
 
 def GetTArray(time: ts) -> NDArray[_dp]:
-    """Return the time array.  Delegates to ``time.GetTArray()``."""
     return time.GetTArray()
 
 
 def GetOmegaArray(time: ts) -> NDArray[_dp]:
-    """Return the angular-frequency array.  Delegates to ``time.GetOmegaArray()``."""
     return time.GetOmegaArray()
 
 
 def GetdOmega(time: ts) -> float:
-    """Return the angular-frequency step.  Delegates to ``time.GetdOmega()``."""
     return time.GetdOmega()
 
-
-# ── validation functions (mirrors Fortran typetime enhancements) ─────────────
 
 try:
     from scipy.constants import c as _c0_val
@@ -302,10 +252,6 @@ def CalculateOptimalDt(
     min_dx = min(dx, dy, dz)
     return safety * min_dx / (v_phase * np.sqrt(3.0))
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# File I/O  (mirrors Fortran ReadTimeParams / WriteTimeParams)
-# ──────────────────────────────────────────────────────────────────────────────
 
 _PFRMTA = "{:25.15E}"  # E25.15E3 equivalent
 

@@ -1,47 +1,10 @@
-"""cpml — 3D Convolutional PML for PSTD Maxwell solver.
+"""cpml — 3D Convolutional PML (CFS-PML) for PSTD Maxwell solver.
 
-Port of Fortran ``cpml.f90`.
+CFS-PML stretching: s = kappa + sigma / (alpha + jw*eps0).
+Recursive convolution with 12 auxiliary psi fields (6 for E, 6 for B).
+Additive corrections to spectral PSTD update. Not thread-safe.
 
-CFS-PML Theory (Roden & Gedney 2000, Chen & Wang 2013):
-
-    Coordinate stretching function:
-
-    .. math:: s = \\kappa + \\sigma / (\\alpha + j\\omega\\varepsilon_0)
-
-    Recursive convolution coefficients (same for E and H on collocated grid):
-
-    .. math::
-        b = \\exp\\!\\left(-\\left(\\frac{\\sigma}{\\kappa}+\\alpha\\right)
-                          \\frac{\\Delta t}{\\varepsilon_0}\\right)
-        \\qquad
-        c = \\frac{\\sigma}{\\sigma\\kappa + \\alpha\\kappa^2}\\,(b-1)
-
-    Auxiliary field update:
-
-    .. math:: \\psi^{n+1} = b\\,\\psi^n + c\\,(\\partial F/\\partial x)
-
-    Modified derivative:
-
-    .. math::
-        \\frac{1}{s}\\frac{\\partial F}{\\partial x}
-        \\to \\frac{1}{\\kappa}\\frac{\\partial F}{\\partial x} + \\psi
-
-Architecture
-------------
-- CPML corrections are **additive** to the standard PSTD spectral update
-  (not a replacement FDTD-style update).
-- Spectral derivatives are computed via ``IFFT(i k Field_k)``.
-- 12 auxiliary ψ fields (6 for B, 6 for E) carry the convolution state between
-  time steps.
-- The inner PML loop is JIT-compiled with Numba ``parallel=True``
-  (mirrors Fortran OpenMP).
-- Module-level functions delegate to a default ``CPML`` instance
-  for Fortran API parity.
-
-Notes
------
-- Not thread-safe when using the module-level default instance (same as Fortran).
-  For concurrent/multi-config use, create separate ``CPML`` instances directly.
+References: Roden & Gedney (2000); Chen & Wang (2013).
 """
 
 from __future__ import annotations
@@ -77,36 +40,16 @@ from ..core.fftw import fft_3D, ifft_3D
 _dp = np.float64
 _dc = np.complex128
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Grading constants (mirror Fortran module parameters)
-# ──────────────────────────────────────────────────────────────────────────────
+
 _M_PROFILE: int = 4  # polynomial grading order
 _KAPPA_MAX: float = 8.0  # coordinate stretching maximum
 _ALPHA_MAX: float = 0.05  # CFS shift parameter
 _R_TARGET: float = 1.0e-8  # target reflection coefficient
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Pure helper functions (module-level, no state — Fortran "pure" subroutines)
-# ──────────────────────────────────────────────────────────────────────────────
 
 
 def CalcNPML(N: int) -> int:
-    """Compute optimal PML thickness for a grid dimension N.
-
-    Uses 5 % of the grid per side, clamped to at least 6 cells.
-    Returns 0 (no PML, periodic) when the grid is too small to
-    support a stable PML layer (< 32 cells).
-
-    Parameters
-    ----------
-    N : int
-        Grid size along one axis.
-
-    Returns
-    -------
-    int
-        Number of PML cells per side (0 = periodic, no PML).
-    """
+    """Optimal PML thickness: 5% of grid per side, min 6 cells, 0 if N < 32."""
     if N < 32:
         # Grid too small for stable PML — treat as periodic
         return 0
@@ -175,10 +118,6 @@ def CalcCoefficients1D(
     return b.astype(_dp), c.astype(_dp)
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Numba JIT kernels (must be module-level; Numba cannot JIT class methods)
-# fastmath=False: preserves FP order, required for correctness in field solvers.
-# ──────────────────────────────────────────────────────────────────────────────
 
 
 @njit(parallel=True, cache=True)
@@ -383,9 +322,6 @@ def _cpml_E_kernel(
                 )
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# CPML class — encapsulates all CPML state for one grid configuration
-# ──────────────────────────────────────────────────────────────────────────────
 
 
 class CPML:
@@ -496,9 +432,6 @@ class CPML:
 
         print("=== CPML Initialization Complete ===")
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # Private helpers
-    # ──────────────────────────────────────────────────────────────────────────
 
     @staticmethod
     def _build_profile_1d(
@@ -577,9 +510,6 @@ class CPML:
         np.multiply(1j * k_1d.reshape(shape), field_kspace, out=out)
         ifft_3D(out)
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # Public API — Fortran name parity
-    # ──────────────────────────────────────────────────────────────────────────
 
     def ApplyCPML_B(
         self,
@@ -806,12 +736,6 @@ class CPML:
         )
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Module-level default instance — Fortran subroutine API parity
-#
-# NOT thread-safe (mirrors Fortran module singleton).
-# For concurrent use or multiple CPML configurations, instantiate CPML directly.
-# ──────────────────────────────────────────────────────────────────────────────
 
 _default: CPML | None = None  # NOT thread-safe
 
