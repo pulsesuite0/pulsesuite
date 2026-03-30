@@ -1,6 +1,5 @@
-<!-- [![PulseSuite Logo](img/pulsesuitelogo.jpeg)](https://pulsesuite.readthedocs.io) -->
 <p align="center">
-  <a href="https://pulsesuite.readthedocs.io">
+  <a href="https://pulsesuite0.readthedocs.io">
     <img
       src="docs/source/_static/PulseSuitenobg.png"
       alt="PulseSuite logo"
@@ -10,10 +9,8 @@
   </a>
 </p>
 
-
-
-[![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://pulsesuite.readthedocs.io)
-[![License](https://img.shields.io/badge/license-MIT-green)](COPYING)
+[![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://pulsesuite0.readthedocs.io)
+[![License](https://img.shields.io/badge/license-LGPL--3.0--or--later-blue)](COPYING)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 
 PulseSuite is a high-performance computational physics toolkit for simulating ultrafast laser-matter interactions in semiconductor quantum structures. It implements the **Semiconductor Bloch Equations (SBEs)** coupled with **Pseudo-Spectral Time Domain (PSTD)** electromagnetic field propagation methods to model quantum wire and quantum well systems under intense optical excitation.
@@ -33,7 +30,7 @@ PulseSuite uses [uv](https://docs.astral.sh/uv/) for dependency management and [
 
 ```bash
 # Clone the repository
-git clone https://github.com/rahulranjansah/pulsesuite.git
+git clone https://github.com/pulsesuite0/pulsesuite.git
 cd pulsesuite
 
 # Install uv (if not already installed)
@@ -54,19 +51,8 @@ kernels). No separate CUDA toolkit download needed — only an NVIDIA driver
 (version 450+). The code automatically detects GPU availability and falls back
 to CPU if CUDA is not present.
 
-**With uv (recommended):**
 ```bash
 uv pip install -e ".[gpu]"
-```
-
-**With pip:**
-```bash
-pip install -e ".[gpu]"
-```
-
-**Manual install (if you only want the packages directly):**
-```bash
-pip install cupy-cuda12x numba-cuda
 ```
 
 ### Development
@@ -74,67 +60,60 @@ pip install cupy-cuda12x numba-cuda
 ```bash
 just              # run tests + lint + format check
 just test         # run test suite (just test -k coulomb to filter)
+just lint         # ruff lint check
+just fmt          # auto-format code
 just --list       # see all available commands
 ```
 
 ## Documentation
 
-📖 **Full documentation is available at:** [pulsesuite.readthedocs.io](https://pulsesuite.readthedocs.io)
+Full documentation: [pulsesuite0.readthedocs.io](https://pulsesuite0.readthedocs.io)
 
-The documentation includes:
-- **Theory and Background**: Physical models and equations
-- **Examples Gallery**: Interactive tutorials with executable code
+- **Examples Gallery**: End-to-end simulation walkthroughs
 - **API Reference**: Complete function and class documentation
-- **Integration Guides**: How to use PulseSuite with other tools
+- **Simulation Guide**: Parameter reference and build instructions
+
+## Running a simulation
+
+```bash
+# 1D quantum wire SBE example
+python docs/source/examples/sbe_wire_1d.py
+
+# 3D with longitudinal field decomposition (requires params files)
+python docs/source/examples/sbe_wire_3d_longitudinal.py
+```
+
+Output is written to `fields/`.
 
 ## Package Structure
 
 ```
-pulsesuite/
-├── core/           # Core utilities (FFT, constants, integrators)
-├── PSTD3D/         # Quantum wire/well physics modules
-│   ├── coulomb.py  # Coulomb interactions
-│   ├── dcfield.py  # DC field transport
-│   ├── emission.py # Spontaneous emission
-│   ├── phonons.py  # Phonon scattering
-│   ├── qwoptics.py # Quantum well optics
-│   └── SBEs.py     # Semiconductor Bloch Equations
-└── libpulsesuite/  # Low-level utilities and integrators
+src/pulsesuite/
+    core/           # Core utilities (FFT, constants, integrators)
+    PSTD3D/         # Quantum wire/well physics modules
+        SBEs.py     # Semiconductor Bloch Equations
+        coulomb.py  # Coulomb interactions
+        dcfield.py  # DC field transport
+        emission.py # Spontaneous emission
+        phonons.py  # Phonon scattering
+        qwoptics.py # Quantum well optics
+        PSTD3D.py   # 3D Maxwell propagator
+    libpulsesuite/  # Low-level utilities and integrators
 ```
 
 ## Requirements
 
-- Python ≥3.10
-- NumPy ≥1.26.4
-- SciPy ≥1.15.2
-- Matplotlib ≥3.10.0
-- pyFFTW ≥0.15.0
-- Numba ≥0.61.2
-- CuPy-CUDA12x ≥13.5.0 (optional, GPU array ops — install via `pip install -e ".[gpu]"`)
-- numba-cuda ≥0.6.0 (optional, Numba CUDA kernels — included in `[gpu]` extra)
-
-## Running a simulation
-
-The SBE test propagation script drives a full quantum wire simulation:
-
-```bash
-# Requires params/qw.params and params/mb.params in the working directory
-uv run python -m pulsesuite.PSTD3D.sbetestprop
-```
-
-Output is written to `fields/` and `dataQW/`.
-
-For detailed examples and tutorials, see the [Examples Gallery](https://pulsesuite.readthedocs.io/en/latest/examples/gallery.html) in the documentation.
+- Python >= 3.10
+- NumPy >= 1.26.4
+- SciPy >= 1.15.2
+- Matplotlib >= 3.10.0
+- pyFFTW >= 0.15.0
+- Numba >= 0.61.2
+- CuPy + numba-cuda (optional, `pip install -e ".[gpu]"`)
 
 ## Contributing
 
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass: `pytest tests/ -v`
-5. Submit a pull request
 
 ## Citation
 
@@ -142,14 +121,14 @@ If you use PulseSuite in your research, please cite:
 
 ```bibtex
 @software{pulsesuite2025,
-  title = {PulseSuite: Simulation suite for ultrafast laser-matter interactions},
-  author = {Sah, Rahul R., Emily S. Hatten, and Gulley, Jeremy R.},
-  year = {2025},
-  url = {https://github.com/rahulranjansah/pulsesuite}
+  title  = {PulseSuite: Simulation suite for ultrafast laser-matter interactions},
+  author = {Sah, Rahul R. and Hatten, Emily S. and Gulley, Jeremy R.},
+  year   = {2025},
+  url    = {https://github.com/pulsesuite0/pulsesuite}
 }
 ```
 
-See [CITATION.md](CITATION.md) for more details.
+See [CITATION.cff](CITATION.cff) for machine-readable citation metadata.
 
 ## Authors
 
@@ -157,13 +136,7 @@ See [AUTHORS.md](AUTHORS.md) for the complete list of contributors.
 
 ## License
 
-This project is licensed under the MIT License - see [LICENSE](COPYING) file for details.
-
-## Links
-
-- [Documentation](https://pulsesuite.readthedocs.io)
-- [Issue Tracker](https://github.com/rahulranjansah/pulsesuite/issues)
-- [Contact](mailto:f1rahulranjan@gmail.com)
+This project is licensed under the LGPL-3.0-or-later — see [COPYING](COPYING) for details.
 
 ## Acknowledgments
 

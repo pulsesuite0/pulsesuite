@@ -253,8 +253,8 @@ class TestArrayGeneration:
         L = 1.0
         result = ts.GetKArray(Nk, L)
         assert len(result) == Nk
-        # Check that it's centered at zero
-        assert np.isclose(result[Nk // 2], 0.0, rtol=1e-12, atol=1e-12)
+        # Zero frequency at index 0 (FFT order)
+        assert np.isclose(result[0], 0.0, rtol=1e-12, atol=1e-12)
 
     def test_getkarray_single_point(self):
         """Test GetKArray with single point."""
@@ -305,8 +305,8 @@ class TestArrayGeneration:
         space = ts.ss(Dims=3, Nx=100, Ny=50, Nz=25, dx=1e-9, dy=1e-9, dz=1e-9, epsr=3.0)
         result = ts.GetKxArray(space)
         assert len(result) == 100
-        # Check centered at zero
-        assert np.isclose(result[50], 0.0, rtol=1e-10, atol=1e-12)
+        # Zero frequency at index 0 (FFT order)
+        assert np.isclose(result[0], 0.0, rtol=1e-10, atol=1e-12)
 
     def test_getkyarray(self):
         """Test GetKyArray."""

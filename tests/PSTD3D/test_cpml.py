@@ -233,9 +233,9 @@ class TestUpdateTFSCAdditive:
         E = _zeros(Nx, Ny, Nz)
         UpdateTFSC(E, tfsf, space, time, pulse, Emax_amp=pulse.Amp)
 
-        # IFFT the result back to real space
-        E_out = E.copy()
-        ifft_3D(E_out)
+        # IFFT the result back to real space (use np.fft to avoid
+        # pyFFTW FFTW_MEASURE plan-time input destruction on first call)
+        E_out = np.fft.ifftn(E)
 
         # Compute expected: S · E_inc · dx
         E_inc = self._compute_E_inc(space, time, pulse, pulse.Amp)
@@ -255,17 +255,16 @@ class TestUpdateTFSCAdditive:
         tfsf = InitializeTFSF(space, pulse)
 
         # Create a known real-space field, FFT to k-space
+        # (use np.fft to avoid pyFFTW plan-time input destruction)
         E_real_orig = RNG.standard_normal((Nx, Ny, Nz)).astype(np.complex128)
-        E = E_real_orig.copy()
-        fft_3D(E)
+        E = np.fft.fftn(E_real_orig)
 
         E_before = E_real_orig.copy()
 
         UpdateTFSC(E, tfsf, space, time, pulse, Emax_amp=pulse.Amp)
 
         # IFFT back to check
-        E_after = E.copy()
-        ifft_3D(E_after)
+        E_after = np.fft.ifftn(E)
 
         # Where S ≈ 0 (far from source), field should be unchanged
         S = tfsf[:, np.newaxis, np.newaxis] * np.ones((1, Ny, Nz))
@@ -286,16 +285,15 @@ class TestUpdateTFSCAdditive:
         time = _time(t=0.0)
         tfsf = InitializeTFSF(space, pulse)
 
-        # Known real-space field
+        # Known real-space field (use np.fft to avoid pyFFTW
+        # plan-time input destruction)
         E_real_orig = RNG.standard_normal((Nx, Ny, Nz)).astype(np.complex128)
-        E = E_real_orig.copy()
-        fft_3D(E)
+        E = np.fft.fftn(E_real_orig)
 
         UpdateTFSC(E, tfsf, space, time, pulse, Emax_amp=pulse.Amp)
 
         # IFFT result
-        E_out = E.copy()
-        ifft_3D(E_out)
+        E_out = np.fft.ifftn(E)
 
         # Compute expected: E_prop + S * E_inc * dx
         E_inc = self._compute_E_inc(space, time, pulse, pulse.Amp)

@@ -150,7 +150,9 @@ nb_execution_show_tb = True
 # Note: If a file causes kernel crashes even with try-except blocks,
 # it likely means the crash happens at a lower level (C extensions, memory issues)
 # and the file should be excluded from execution
-nb_execution_excludepatterns = []
+nb_execution_excludepatterns = [
+    "examples/07_sbe_simulations.myst.md",
+]
 
 # Your .myst.md files declare format_name: myst in the YAML header,
 # so if you keep jupytext, the fmt must be "myst" (not "mystnb")

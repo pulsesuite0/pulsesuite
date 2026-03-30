@@ -295,18 +295,19 @@ def _asF(a: NDArray, dtype) -> NDArray:
 
 def _fft1(a: NDArray[_dc], inverse: bool = False) -> NDArray[_dc]:
     if _HAS_PYFFTW:  # fastest path
-        # Create aligned arrays for pyFFTW; overwrite_input is safe with a scratch copy
-        ain = pyfftw.byte_align(a.astype(_dc, copy=False, order="F"))
-        out = pyfftw.empty_aligned(ain.shape, dtype=_dc, order="F")
+        # Use empty_aligned to guarantee alignment and preserve F-order.
+        # Plan first (FFTW_MEASURE may destroy input), then copy data in.
+        ain = pyfftw.empty_aligned(a.shape, dtype=_dc, order="F")
+        out = pyfftw.empty_aligned(a.shape, dtype=_dc, order="F")
         fft_obj = pyfftw.FFTW(
             ain,
             out,
             direction="FFTW_BACKWARD" if inverse else "FFTW_FORWARD",
             threads=_FFTW_THREADS,
         )
-        fft_obj()
-        if inverse:
-            out /= out.shape[-1]
+        ain[...] = np.asfortranarray(a.astype(_dc, copy=False))
+        fft_obj(ain, out)
+        # pyfftw normalise_idft=True (default) already handles 1/N for inverse
         return out
     else:
         assert _sfft is not None, "SciPy is required when pyFFTW is unavailable."
@@ -319,8 +320,10 @@ def _fftn(
     a: NDArray[_dc], axes: Tuple[int, ...], inverse: bool = False
 ) -> NDArray[_dc]:
     if _HAS_PYFFTW:
-        ain = pyfftw.byte_align(a.astype(_dc, copy=False, order="F"))
-        out = pyfftw.empty_aligned(ain.shape, dtype=_dc, order="F")
+        # Use empty_aligned to guarantee alignment and preserve F-order.
+        # Plan first (FFTW_MEASURE may destroy input), then copy data in.
+        ain = pyfftw.empty_aligned(a.shape, dtype=_dc, order="F")
+        out = pyfftw.empty_aligned(a.shape, dtype=_dc, order="F")
         fft_obj = pyfftw.FFTW(
             ain,
             out,
@@ -328,13 +331,9 @@ def _fftn(
             direction="FFTW_BACKWARD" if inverse else "FFTW_FORWARD",
             threads=_FFTW_THREADS,
         )
-        fft_obj()
-        if inverse:
-            # Normalize by product of lengths along axes
-            nrm = 1
-            for ax in axes:
-                nrm *= a.shape[ax]
-            out /= nrm
+        ain[...] = np.asfortranarray(a.astype(_dc, copy=False))
+        fft_obj(ain, out)
+        # pyfftw normalise_idft=True (default) already handles 1/N for inverse
         return out
     else:
         assert _sfft is not None, "SciPy is required when pyFFTW is unavailable."

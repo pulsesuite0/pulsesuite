@@ -63,7 +63,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/pulsesuite0/pulsesuite"
-Documentation = "https://example.com"
+Documentation = "https://pulsesuite0.readthedocs.io"
 Source = "https://github.com/pulsesuite0/pulsesuite"
 Tracker = "https://github.com/pulsesuite0/pulsesuite/issues"
 

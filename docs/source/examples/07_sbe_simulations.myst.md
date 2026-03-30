@@ -6,6 +6,8 @@ kernelspec:
   display_name: Python 3
   language: python
   name: python3
+mystnb:
+  execution_mode: "off"
 ---
 
 # SBE Simulation Examples
