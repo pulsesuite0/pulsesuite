@@ -1,19 +1,13 @@
-<!-- [![PulseSuite Logo](img/pulsesuitelogo.jpeg)](https://pulsesuite.readthedocs.io) -->
-<p align="center">
-  <a href="https://pulsesuite.readthedocs.io">
-    <img
-      src="docs/source/_static/PulseSuitenobg.png"
-      alt="PulseSuite logo"
-      width="100%"
-      style="max-width:1000px; height:auto;"
-    />
-  </a>
-</p>
+```{image} _static/PulseSuitenobg.png
+:alt: PulseSuite logo
+:align: center
+:width: 100%
+```
 
-
+# PulseSuite
 
 [![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://pulsesuite.readthedocs.io)
-[![License](https://img.shields.io/badge/license-MIT-green)](COPYING)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/rahulranjansah/pulsesuite/blob/main/COPYING)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 
 PulseSuite is a high-performance computational physics toolkit for simulating ultrafast laser-matter interactions in semiconductor quantum structures. It implements the **Semiconductor Bloch Equations (SBEs)** coupled with **Pseudo-Spectral Time Domain (PSTD)** electromagnetic field propagation methods to model quantum wire and quantum well systems under intense optical excitation.
@@ -46,29 +40,6 @@ uv sync --all-extras
 pip install -e .
 ```
 
-### GPU Acceleration (optional)
-
-If you have an NVIDIA GPU, install the GPU extra to enable CUDA acceleration.
-This installs `cupy-cuda12x` (GPU array ops) and `numba-cuda` (Numba `@cuda.jit`
-kernels). No separate CUDA toolkit download needed — only an NVIDIA driver
-(version 450+). The code automatically detects GPU availability and falls back
-to CPU if CUDA is not present.
-
-**With uv (recommended):**
-```bash
-uv pip install -e ".[gpu]"
-```
-
-**With pip:**
-```bash
-pip install -e ".[gpu]"
-```
-
-**Manual install (if you only want the packages directly):**
-```bash
-pip install cupy-cuda12x numba-cuda
-```
-
 ### Development
 
 ```bash
@@ -76,16 +47,6 @@ just              # run tests + lint + format check
 just test         # run test suite (just test -k coulomb to filter)
 just --list       # see all available commands
 ```
-
-## Documentation
-
-📖 **Full documentation is available at:** [pulsesuite.readthedocs.io](https://pulsesuite.readthedocs.io)
-
-The documentation includes:
-- **Theory and Background**: Physical models and equations
-- **Examples Gallery**: Interactive tutorials with executable code
-- **API Reference**: Complete function and class documentation
-- **Integration Guides**: How to use PulseSuite with other tools
 
 ## Package Structure
 
@@ -108,12 +69,11 @@ pulsesuite/
 - NumPy ≥1.26.4
 - SciPy ≥1.15.2
 - Matplotlib ≥3.10.0
-- pyFFTW ≥0.15.0
-- Numba ≥0.61.2
-- CuPy-CUDA12x ≥13.5.0 (optional, GPU array ops — install via `pip install -e ".[gpu]"`)
-- numba-cuda ≥0.6.0 (optional, Numba CUDA kernels — included in `[gpu]` extra)
+- pyFFTW ≥0.15.0 (recommended for performance)
+- Numba ≥0.61.2 (optional, for JIT acceleration)
+- Numba-CUDA==0.23.0 (optional, for CUDA acceleration)
 
-## Running a simulation
+## Running a Simulation
 
 The SBE test propagation script drives a full quantum wire simulation:
 
@@ -124,11 +84,11 @@ uv run python -m pulsesuite.PSTD3D.sbetestprop
 
 Output is written to `fields/` and `dataQW/`.
 
-For detailed examples and tutorials, see the [Examples Gallery](https://pulsesuite.readthedocs.io/en/latest/examples/gallery.html) in the documentation.
+For detailed examples and tutorials, see the {doc}`gallery` in the documentation.
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+We welcome contributions! Please see the {doc}`contributing` guide for guidelines.
 
 1. Fork the repository
 2. Create a feature branch
@@ -149,15 +109,15 @@ If you use PulseSuite in your research, please cite:
 }
 ```
 
-See [CITATION.md](CITATION.md) for more details.
+See {doc}`citation` for more details.
 
 ## Authors
 
-See [AUTHORS.md](AUTHORS.md) for the complete list of contributors.
+See {doc}`authors` for the complete list of contributors.
 
 ## License
 
-This project is licensed under the MIT License - see [LICENSE](COPYING) file for details.
+This project is licensed under the MIT License - see [LICENSE](https://github.com/rahulranjansah/pulsesuite/blob/main/COPYING) for details.
 
 ## Links
 

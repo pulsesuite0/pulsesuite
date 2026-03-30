@@ -15,7 +15,6 @@ build/
 # Virtual environments
 .venv/
 
-
 # Build artifacts
 docs/_build/
 coverage.xml
@@ -24,3 +23,19 @@ coverage.xml
 # OS junk
 .DS_Store
 Thumbs.db
+
+# Simulation working directories
+src/pulsesuite/PSTD3D/fields/
+src/pulsesuite/PSTD3D/output/
+src/pulsesuite/PSTD3D/dataQW/
+src/pulsesuite/PSTD3D/sim/
+tests/PSTD3D/dataQW/*
+
+# runs
+runs/
+
+# Simulation output (byproducts)
+*.dat
+fields/
+dataQW/
+output/
