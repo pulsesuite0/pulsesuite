@@ -58,8 +58,7 @@ def _make_time(t=0.0, tf=None, dt=DT, n=1):
     return ts(t=t, tf=tf, dt=dt, n=n)
 
 
-def _make_pulse(lam=800e-9, Amp=1e8, Tw=30e-15, Tp=100e-15, chirp=0.0,
-                w0=float("inf")):
+def _make_pulse(lam=800e-9, Amp=1e8, Tw=30e-15, Tp=100e-15, chirp=0.0, w0=float("inf")):
     return ps(lambda_=lam, Amp=Amp, Tw=Tw, Tp=Tp, chirp=chirp, w0=w0)
 
 
@@ -81,7 +80,6 @@ def _random_field():
 
 
 class TestInitializeFields:
-
     def test_returns_nine_arrays(self):
         fields = InitializeFields(NX, NY, NZ)
         assert len(fields) == 9
@@ -259,6 +257,7 @@ class TestDivergenceFree:
     def _spectral_div(self, Fx, Fy, Fz, space):
         """Compute ik·F in k-space."""
         from pulsesuite.PSTD3D.typespace import GetKxArray, GetKyArray, GetKzArray
+
         kx = GetKxArray(space)[:, np.newaxis, np.newaxis]
         ky = GetKyArray(space)[np.newaxis, :, np.newaxis]
         kz = GetKzArray(space)[np.newaxis, np.newaxis, :]
@@ -372,6 +371,7 @@ class TestUpdateTFSC:
 
         E = _random_field()
         from pulsesuite.core.fftw import fft_3D
+
         fft_3D(E)
         E_before = E.copy()
 
@@ -398,7 +398,6 @@ class TestUpdateTFSC:
 
 
 class TestPSTD3DPropagator:
-
     def test_construction(self):
         """Propagator initialises without error."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -485,10 +484,12 @@ class TestPSTD3DPropagator:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             space = _make_space(Nx=8, Ny=8, Nz=8)
-            time = _make_time(t=0.0, tf=3*DT, dt=DT, n=1)
+            time = _make_time(t=0.0, tf=3 * DT, dt=DT, n=1)
             pulse = _make_pulse(w0=1e-3)
             prop = PSTD3DPropagator(
-                space, time, pulse,
+                space,
+                time,
+                pulse,
                 calc_j=mock_calc_j,
                 output_dir=tmpdir,
             )
@@ -509,10 +510,12 @@ class TestShortSimulation:
     def test_two_step_run_completes(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             space = _make_space(Nx=8, Ny=8, Nz=8)
-            time = _make_time(t=0.0, tf=3*DT, dt=DT, n=1)
+            time = _make_time(t=0.0, tf=3 * DT, dt=DT, n=1)
             pulse = _make_pulse(w0=1e-3)
             prop = PSTD3DPropagator(
-                space, time, pulse,
+                space,
+                time,
+                pulse,
                 output_dir=tmpdir,
                 snapshot_interval=1,
             )
@@ -532,10 +535,12 @@ class TestShortSimulation:
         """All fields remain finite (no NaN/overflow) after a short run."""
         with tempfile.TemporaryDirectory() as tmpdir:
             space = _make_space(Nx=8, Ny=8, Nz=8)
-            time = _make_time(t=0.0, tf=3*DT, dt=DT, n=1)
+            time = _make_time(t=0.0, tf=3 * DT, dt=DT, n=1)
             pulse = _make_pulse(w0=1e-3)
             prop = PSTD3DPropagator(
-                space, time, pulse,
+                space,
+                time,
+                pulse,
                 output_dir=tmpdir,
             )
             prop.run()
@@ -666,7 +671,9 @@ class TestBoundaryTypeSelection:
             time = _make_time()
             pulse = _make_pulse(w0=float("inf"))
             prop = PSTD3DPropagator(
-                space, time, pulse,
+                space,
+                time,
+                pulse,
                 boundary_type="mask",
                 output_dir=tmpdir,
             )
@@ -680,7 +687,9 @@ class TestBoundaryTypeSelection:
             time = _make_time()
             pulse = _make_pulse(w0=float("inf"))
             prop = PSTD3DPropagator(
-                space, time, pulse,
+                space,
+                time,
+                pulse,
                 boundary_type="cpml",
                 output_dir=tmpdir,
             )
@@ -702,7 +711,9 @@ class TestSourceTypeSelection:
             time = _make_time()
             pulse = _make_pulse(Amp=1e8, w0=float("inf"))
             prop = PSTD3DPropagator(
-                space, time, pulse,
+                space,
+                time,
+                pulse,
                 source_type="ic",
                 boundary_type="mask",
                 output_dir=tmpdir,
@@ -718,7 +729,9 @@ class TestSourceTypeSelection:
             time = _make_time()
             pulse = _make_pulse(w0=float("inf"))
             prop = PSTD3DPropagator(
-                space, time, pulse,
+                space,
+                time,
+                pulse,
                 source_type="soft",
                 boundary_type="mask",
                 output_dir=tmpdir,
@@ -736,7 +749,9 @@ class TestSourceTypeSelection:
             time = _make_time()
             pulse = _make_pulse(w0=float("inf"))
             prop = PSTD3DPropagator(
-                space, time, pulse,
+                space,
+                time,
+                pulse,
                 source_type="soft",
                 boundary_type="mask",
                 output_dir=tmpdir,
@@ -751,7 +766,9 @@ class TestSourceTypeSelection:
             time = _make_time()
             pulse = _make_pulse(w0=float("inf"))
             prop = PSTD3DPropagator(
-                space, time, pulse,
+                space,
+                time,
+                pulse,
                 source_type="ic",
                 boundary_type="mask",
                 output_dir=tmpdir,
@@ -775,7 +792,9 @@ class TestShortSimulationMask:
             time = _make_time(t=0.0, tf=3 * DT, dt=DT, n=1)
             pulse = _make_pulse(Amp=1e8, w0=float("inf"))
             prop = PSTD3DPropagator(
-                space, time, pulse,
+                space,
+                time,
+                pulse,
                 source_type="ic",
                 boundary_type="mask",
                 output_dir=tmpdir,
@@ -798,7 +817,9 @@ class TestShortSimulationMask:
             time = _make_time(t=0.0, tf=3 * DT, dt=DT, n=1)
             pulse = _make_pulse(Amp=1e8, Tp=0.0, w0=float("inf"))
             prop = PSTD3DPropagator(
-                space, time, pulse,
+                space,
+                time,
+                pulse,
                 source_type="soft",
                 boundary_type="mask",
                 output_dir=tmpdir,
@@ -817,7 +838,9 @@ class TestShortSimulationMask:
             time = _make_time(t=0.0, tf=3 * DT, dt=DT, n=1)
             pulse = _make_pulse(Amp=1e8, w0=float("inf"))
             prop = PSTD3DPropagator(
-                space, time, pulse,
+                space,
+                time,
+                pulse,
                 source_type="ic",
                 boundary_type="mask",
                 output_dir=tmpdir,

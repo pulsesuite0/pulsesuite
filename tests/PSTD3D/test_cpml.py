@@ -54,8 +54,7 @@ def _space(Nx=32, Ny=8, Nz=8, dx=DX, dy=DY, dz=DZ, epsr=EPSR):
     return ss(Dims=3, Nx=Nx, Ny=Ny, Nz=Nz, dx=dx, dy=dy, dz=dz, epsr=epsr)
 
 
-def _pulse(lam=800e-9, Amp=1e8, Tw=30e-15, Tp=100e-15, chirp=0.0,
-           w0=float("inf")):
+def _pulse(lam=800e-9, Amp=1e8, Tw=30e-15, Tp=100e-15, chirp=0.0, w0=float("inf")):
     return ps(lambda_=lam, Amp=Amp, Tw=Tw, Tp=Tp, chirp=chirp, w0=w0)
 
 
@@ -216,7 +215,8 @@ class TestUpdateTFSCAdditive:
         zz_3 = zz[np.newaxis, np.newaxis, :]
         gauss_yz = np.exp(-(yy_3**2 + zz_3**2) / pulse.w0**2)
         E_inc = (
-            Emax_amp * gauss_yz
+            Emax_amp
+            * gauss_yz
             * np.exp(-(tau_3**2) / tau_G**2)
             * np.cos(omega0 * tau_3 + pulse.chirp * tau_3**2)
         )
@@ -274,7 +274,8 @@ class TestUpdateTFSCAdditive:
             assert np.allclose(
                 E_after.real[far_mask],
                 E_before.real[far_mask],
-                rtol=1e-6, atol=1e-10,
+                rtol=1e-6,
+                atol=1e-10,
             )
 
     def test_additive_formula_pointwise(self):
@@ -332,9 +333,7 @@ class TestUpdateTFSCIncidentField:
         peak_x = np.argmax(tfsf)
         slice_yz = E_out.real[peak_x, :, :]
         # All y,z values should be the same (plane wave)
-        assert np.allclose(
-            slice_yz, slice_yz[0, 0], rtol=1e-10, atol=1e-10
-        )
+        assert np.allclose(slice_yz, slice_yz[0, 0], rtol=1e-10, atol=1e-10)
 
     def test_gaussian_beam_transverse_decay(self):
         """With finite w0, the field decays away from y=z=0."""

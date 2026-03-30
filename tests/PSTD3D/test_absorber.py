@@ -24,7 +24,6 @@ from pulsesuite.PSTD3D.absorber import (
     _build_1d_mask,
 )
 
-
 # ──────────────────────────────────────────────────────────────────────────────
 # CalcNPML
 # ──────────────────────────────────────────────────────────────────────────────
@@ -223,17 +222,13 @@ class TestApplyAbsorber:
         Ez = self._make_uniform_kspace(1.0)
 
         energy_before = (
-            np.sum(np.abs(Ex) ** 2)
-            + np.sum(np.abs(Ey) ** 2)
-            + np.sum(np.abs(Ez) ** 2)
+            np.sum(np.abs(Ex) ** 2) + np.sum(np.abs(Ey) ** 2) + np.sum(np.abs(Ez) ** 2)
         )
 
         ApplyAbsorber_E(Ex, Ey, Ez)
 
         energy_after = (
-            np.sum(np.abs(Ex) ** 2)
-            + np.sum(np.abs(Ey) ** 2)
-            + np.sum(np.abs(Ez) ** 2)
+            np.sum(np.abs(Ex) ** 2) + np.sum(np.abs(Ey) ** 2) + np.sum(np.abs(Ez) ** 2)
         )
 
         # Energy should decrease (absorber removes energy at boundaries)
@@ -248,17 +243,13 @@ class TestApplyAbsorber:
         Bz = self._make_uniform_kspace(1.0)
 
         energy_before = (
-            np.sum(np.abs(Bx) ** 2)
-            + np.sum(np.abs(By) ** 2)
-            + np.sum(np.abs(Bz) ** 2)
+            np.sum(np.abs(Bx) ** 2) + np.sum(np.abs(By) ** 2) + np.sum(np.abs(Bz) ** 2)
         )
 
         ApplyAbsorber_B(Bx, By, Bz)
 
         energy_after = (
-            np.sum(np.abs(Bx) ** 2)
-            + np.sum(np.abs(By) ** 2)
-            + np.sum(np.abs(Bz) ** 2)
+            np.sum(np.abs(Bx) ** 2) + np.sum(np.abs(By) ** 2) + np.sum(np.abs(Bz) ** 2)
         )
 
         assert energy_after < energy_before

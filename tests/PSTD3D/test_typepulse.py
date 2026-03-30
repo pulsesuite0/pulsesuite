@@ -78,7 +78,6 @@ def _make_pulse(**overrides) -> ps:
 
 
 class TestPsConstruction:
-
     def test_fields_stored(self):
         p = _make_pulse()
         assert p.lambda_ == 800e-9
@@ -159,9 +158,7 @@ class TestTemporalSpectral:
         p = _make_pulse(chirp=0.0)
         tau_G = p.CalcTau()
         expected = np.sqrt(8.0 * np.log(2.0)) / tau_G
-        assert np.isclose(
-            p.CalcDeltaOmega(), expected, rtol=1e-12, atol=1e-12
-        )
+        assert np.isclose(p.CalcDeltaOmega(), expected, rtol=1e-12, atol=1e-12)
 
     def test_calc_delta_omega_chirped(self):
         """Chirp broadens the spectrum: Δω = sqrt(8*ln2*(1+a²)) / τ_G."""
@@ -169,9 +166,7 @@ class TestTemporalSpectral:
         tau_G = p.CalcTau()
         a = p.chirp * tau_G**2
         expected = np.sqrt(8.0 * np.log(2.0) * (1.0 + a**2)) / tau_G
-        assert np.isclose(
-            p.CalcDeltaOmega(), expected, rtol=1e-12, atol=1e-12
-        )
+        assert np.isclose(p.CalcDeltaOmega(), expected, rtol=1e-12, atol=1e-12)
         # Chirped should be broader than unchirped
         p_unchirped = _make_pulse(chirp=0.0, Tw=p.Tw)
         assert p.CalcDeltaOmega() > p_unchirped.CalcDeltaOmega()
@@ -200,17 +195,18 @@ class TestTemporalSpectral:
 class TestGaussianBeam:
     r"""z_R = πw₀²/λ,  R(x) = x[1+(z_R/x)²],  φ_G = arctan(x/z_R)."""
 
-    @pytest.mark.parametrize("w0,lam", [
-        (10e-6, 800e-9),
-        (50e-6, 1550e-9),
-        (1e-3, 10.6e-6),
-    ])
+    @pytest.mark.parametrize(
+        "w0,lam",
+        [
+            (10e-6, 800e-9),
+            (50e-6, 1550e-9),
+            (1e-3, 10.6e-6),
+        ],
+    )
     def test_rayleigh_range(self, w0, lam):
         p = _make_pulse(lambda_=lam)
         expected = np.pi * w0**2 / lam
-        assert np.isclose(
-            p.CalcRayleigh(w0), expected, rtol=1e-12, atol=1e-12
-        )
+        assert np.isclose(p.CalcRayleigh(w0), expected, rtol=1e-12, atol=1e-12)
 
     def test_curvature_at_waist_is_inf(self):
         p = _make_pulse()
@@ -235,17 +231,13 @@ class TestGaussianBeam:
 
     def test_gouy_phase_at_zero(self):
         p = _make_pulse()
-        assert np.isclose(
-            p.CalcGouyPhase(0.0, 10e-6), 0.0, rtol=1e-12, atol=1e-12
-        )
+        assert np.isclose(p.CalcGouyPhase(0.0, 10e-6), 0.0, rtol=1e-12, atol=1e-12)
 
     def test_gouy_phase_at_rayleigh_is_pi_over_4(self):
         p = _make_pulse(lambda_=800e-9)
         w0 = 10e-6
         z_R = p.CalcRayleigh(w0)
-        assert np.isclose(
-            p.CalcGouyPhase(z_R, w0), np.pi / 4.0, rtol=1e-12, atol=1e-12
-        )
+        assert np.isclose(p.CalcGouyPhase(z_R, w0), np.pi / 4.0, rtol=1e-12, atol=1e-12)
 
     def test_module_wrappers(self):
         p = _make_pulse(lambda_=800e-9)
@@ -330,7 +322,6 @@ class TestW0:
 
 
 class TestModuleLevelAccessors:
-
     def test_get_lambda(self):
         p = _make_pulse(lambda_=1064e-9)
         assert GetLambda(p) == 1064e-9
@@ -387,16 +378,17 @@ class TestModuleLevelAccessors:
 
 
 class TestFileIO:
-
     def test_write_read_round_trip(self):
-        original = _make_pulse(lambda_=1550e-9, Amp=3e7, Tw=50e-15,
-                               Tp=200e-15, chirp=1e24)
+        original = _make_pulse(
+            lambda_=1550e-9, Amp=3e7, Tw=50e-15, Tp=200e-15, chirp=1e24
+        )
         with tempfile.TemporaryDirectory() as tmpdir:
             path = str(Path(tmpdir) / "pulse.params")
             from pulsesuite.PSTD3D.typepulse import (
                 WritePulseParams,
                 readpulseparams_sub,
             )
+
             WritePulseParams(path, original)
 
             loaded = _make_pulse()  # dummy to overwrite
@@ -418,6 +410,7 @@ class TestFileIO:
                 WritePulseParams,
                 readpulseparams_sub,
             )
+
             WritePulseParams(path, original)
             loaded = _make_pulse()
             with open(path, "r") as f:

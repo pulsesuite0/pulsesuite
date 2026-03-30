@@ -95,11 +95,14 @@ class TestCalcNt:
         time = ts(t=0.0, tf=2.0, dt=0.25, n=0)
         assert CalcNt(time) == time.CalcNt()
 
-    @pytest.mark.parametrize("tf,dt,expected", [
-        (1e-12, 1e-14, 100),
-        (2.0, 0.002, 1000),
-        (5.0, 0.01, 500),
-    ])
+    @pytest.mark.parametrize(
+        "tf,dt,expected",
+        [
+            (1e-12, 1e-14, 100),
+            (2.0, 0.002, 1000),
+            (5.0, 0.01, 500),
+        ],
+    )
     def test_various_scales(self, tf, dt, expected):
         time = ts(t=0.0, tf=tf, dt=dt, n=0)
         assert time.CalcNt() == expected
@@ -191,9 +194,7 @@ class TestGetTArray:
 
     def test_module_level_wrapper(self):
         time = ts(t=0.0, tf=1.0, dt=0.25, n=0)
-        assert np.allclose(
-            GetTArray(time), time.GetTArray(), rtol=1e-12, atol=1e-12
-        )
+        assert np.allclose(GetTArray(time), time.GetTArray(), rtol=1e-12, atol=1e-12)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -204,12 +205,15 @@ class TestGetTArray:
 class TestGetOmegaArray:
     """GetOmegaArray: matches numpy.fft.fftfreq(Nt, d=dt) * 2π."""
 
-    @pytest.mark.parametrize("Nt,dt", [
-        (16, 1e-15),
-        (64, 0.5e-14),
-        (100, 1e-12),
-        (128, 1.0),
-    ])
+    @pytest.mark.parametrize(
+        "Nt,dt",
+        [
+            (16, 1e-15),
+            (64, 0.5e-14),
+            (100, 1e-12),
+            (128, 1.0),
+        ],
+    )
     def test_matches_numpy_fftfreq(self, Nt, dt):
         tf = Nt * dt
         time = ts(t=0.0, tf=tf, dt=dt, n=0)
@@ -253,9 +257,7 @@ class TestGetdOmega:
 
     def test_module_level_wrapper(self):
         time = ts(t=0.0, tf=2.0, dt=0.1, n=0)
-        assert np.isclose(
-            GetdOmega(time), time.GetdOmega(), rtol=1e-12, atol=1e-12
-        )
+        assert np.isclose(GetdOmega(time), time.GetdOmega(), rtol=1e-12, atol=1e-12)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -320,6 +322,7 @@ class TestFileIO:
             loaded = ts(t=0.0, tf=0.0, dt=0.0, n=0)
             # ReadTimeParams prints to stdout — suppress by reading manually
             from pulsesuite.PSTD3D.typetime import readtimeparams_sub
+
             with open(path, "r") as f:
                 readtimeparams_sub(f, loaded)
 
@@ -337,6 +340,7 @@ class TestFileIO:
 
             loaded = ts(t=0.0, tf=0.0, dt=0.0, n=0)
             from pulsesuite.PSTD3D.typetime import readtimeparams_sub
+
             with open(path, "r") as f:
                 readtimeparams_sub(f, loaded)
 
