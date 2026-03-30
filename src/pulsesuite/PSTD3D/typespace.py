@@ -5,7 +5,7 @@ This module provides the spatial grid structure (ss type) and associated
 functions for reading, writing, and accessing spatial grid parameters.
 Supports 1D, 2D, and 3D grids with configurable pixel sizes and dielectric constants.
 
-Author: Rahul R. Sah and Emily S. Hatten
+Author: Rahul R. Sah & E.S Hatten
 """
 
 import os
@@ -880,10 +880,21 @@ def GetKArray(Nk, L):
     if Nk == 1:
         return np.array([0.0])
     else:
-        dk = twopi / L if L > 0 else 1.0
-        k = np.arange(Nk, dtype=float) * dk
-        k = k - k[Nk // 2]  # Center at zero
-        return k
+        # OLD: centered order (zero at middle) — wrong for raw fftn/ifftn
+        # dk = twopi / L if L > 0 else 1.0
+        # k = np.arange(Nk, dtype=float) * dk
+        # k = k - k[Nk // 2]  # Center at zero
+        # return k
+
+        # NEW: FFTW order (zero-freq at index 0), matches Fortran helpers.F90
+        dl = twopi / L if L > 0 else 1.0
+        k_arr = np.zeros(Nk, dtype=np.float64)
+        for i in range(Nk):
+            if i <= Nk // 2:
+                k_arr[i] = float(i) * dl
+            else:
+                k_arr[i] = float(i - Nk) * dl
+        return k_arr
 
 
 def GetXArray(space):
@@ -1025,22 +1036,6 @@ def GetKzArray(space):
         return np.array([0.0])
     else:
         return GetKArray(GetNz(space), GetZWidth(space))
-
-
-def GetN0(space):
-    """Get the background refractive index :math:`n_0 = \\sqrt{\\varepsilon_r}`.
-
-    Parameters
-    ----------
-    space : ss
-        Space structure.
-
-    Returns
-    -------
-    float
-        Background refractive index.
-    """
-    return np.sqrt(space.epsr)
 
 
 # Differential functions for conjugate coordinate system
