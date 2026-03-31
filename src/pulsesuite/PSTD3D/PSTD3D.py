@@ -1,16 +1,9 @@
-r"""PSTD3D — 3-D pseudo-spectral time-domain Maxwell propagator.
+"""3-D pseudo-spectral time-domain Maxwell propagator.
 
-Leapfrog time-stepping in Fourier space:
+Leapfrog time-stepping in Fourier space with soft-source or IC injection
+and mask or CPML boundaries. Not thread-safe.
 
-.. math::
-
-    \mathbf{E}^{n+1} = \mathbf{E}^n + i\,v^2 \Delta t\,(\mathbf{k} \times \mathbf{B}^n) - \mu_0 v^2 \Delta t\,\mathbf{J}^n
-
-    \mathbf{B}^{n+1} = \mathbf{B}^n - i\,\Delta t\,(\mathbf{k} \times \mathbf{E}^{n+1})
-
-Sources: ``'soft'`` (additive, Schneider 2010) or ``'ic'`` (initial condition).
-Boundaries: ``'mask'`` (Kosloff & Kosloff 1986) or ``'cpml'`` (Chen & Wang 2013).
-Not thread-safe.
+Author: Emily S. Hatten
 """
 
 from __future__ import annotations
@@ -33,7 +26,6 @@ _ii = 1j
 _twopi = 2.0 * np.pi
 
 
-
 def UpdateE3D(
     space,
     time,
@@ -47,13 +39,7 @@ def UpdateE3D(
     Ey: NDArray[_dc],
     Ez: NDArray[_dc],
 ) -> None:
-    r"""Spectral E-field update (Maxwell–Ampere law, in-place).
-
-    .. math::
-
-        \mathbf{E}^{n+1} = \mathbf{E}^n
-            + i\,v^2 \Delta t\,(\mathbf{k} \times \mathbf{B})
-            - \mu_0\,v^2 \Delta t\,\mathbf{J}
+    """Spectral E-field update (Maxwell-Ampere law, in-place).
 
     Parameters
     ----------
@@ -66,7 +52,7 @@ def UpdateE3D(
     Jx, Jy, Jz : ndarray (Nx, Ny, Nz), complex128
         Current density components in k-space.
     Ex, Ey, Ez : ndarray (Nx, Ny, Nz), complex128
-        Electric field components in k-space.  Modified in-place.
+        Electric field components in k-space. Modified in-place.
     """
     from .typespace import GetEpsr, GetKxArray, GetKyArray, GetKzArray
     from .typetime import GetDt
@@ -100,12 +86,7 @@ def UpdateB3D(
     By: NDArray[_dc],
     Bz: NDArray[_dc],
 ) -> None:
-    r"""Spectral B-field update (Faraday's law, in-place).
-
-    .. math::
-
-        \mathbf{B}^{n+1} = \mathbf{B}^n
-            - i\,\Delta t\,(\mathbf{k} \times \mathbf{E})
+    """Spectral B-field update (Faraday's law, in-place).
 
     Parameters
     ----------
@@ -158,36 +139,10 @@ def SeedInitialCondition(
     Bz: NDArray[_dc],
     npml_x: int = 0,
 ) -> None:
-    r"""Seed Ey and Bz with the full pulse at t=t0 (IC mode).
+    """Seed Ey and Bz with the full pulse at t=t0 (IC mode).
 
-    A +x propagating plane wave uses a **complex carrier**
-    :math:`\exp(+i\,k\,\xi)` to populate only positive-k Fourier modes,
-    producing unidirectional +x propagation.  Using :math:`\cos(k\xi)`
-    would create both +k and -k components (standing wave).
-
-    .. math::
-
-        E_y(x) = E_0\,G(y,z)\,
-            \exp\!\left(-\xi^2 / \sigma_x^2\right)\,
-            \exp\!\left[+i\,(k_{\text{med}}\,\xi
-                         + C_{\text{spatial}}\,\xi^2)\right]
-
-        B_z(x) = E_y(x) / v
-
-    where :math:`\xi = x - x_{\text{center}}`,
-    :math:`\sigma_x = v\,\tau_G` is the spatial Gaussian half-width,
-    :math:`k_{\text{med}} = \omega_0 / v` is the carrier wavenumber in
-    the medium, and :math:`C_{\text{spatial}} = C / v^2` converts temporal
-    chirp to spatial chirp.
-
-    The physical field is :math:`\operatorname{Re}(E_y)`.  The imaginary
-    part is the Hilbert transform (analytic signal representation).
-
-    The impedance relation :math:`B_z = E_y / v` ensures unidirectional
-    +x propagation (Taflove & Hagness 2005, Sec. 5.2.1).
-
-    After seeding in real space, both fields are FFT'd to k-space for the
-    spectral time-stepper.
+    Uses a complex carrier for unidirectional +x propagation and the
+    impedance relation Bz = Ey / v. Fields are FFT'd to k-space after seeding.
 
     Parameters
     ----------
@@ -198,12 +153,12 @@ def SeedInitialCondition(
     pulse : ps
         Pulse parameter structure.
     Ey : ndarray (Nx, Ny, Nz), complex128
-        Electric field (y-component).  Modified in-place.
+        Electric field (y-component). Modified in-place.
     Bz : ndarray (Nx, Ny, Nz), complex128
-        Magnetic field (z-component).  Modified in-place.
+        Magnetic field (z-component). Modified in-place.
     npml_x : int, optional
-        Number of PML cells per side on x-axis.  Field is zeroed in these
-        regions (CPML/absorber assumes zero initial field there).
+        Number of PML cells per side on x-axis. Field is zeroed in these
+        regions.
     """
     from ..core.fftw import fft_3D
     from .typepulse import GetAmp, GetChirp, GetW0
@@ -271,10 +226,8 @@ def SeedInitialCondition(
     print(f"  IC seed: grid length   = {(x[-1] - x[0]) * 1e6:.4f} um")
 
 
-
 def _calc_j_noop(space, time, Ex, Ey, Ez, Jx, Jy, Jz) -> None:  # noqa: N802
     pass
-
 
 
 class PSTD3DPropagator:
@@ -903,7 +856,6 @@ class PSTD3DPropagator:
         np.save(self.simdir / "grid_x.npy", GetXArray(self.space))
         np.save(self.simdir / "grid_y.npy", GetYArray(self.space))
         np.save(self.simdir / "grid_z.npy", GetZArray(self.space))
-
 
 
 _default: PSTD3DPropagator | None = None  # NOT thread-safe

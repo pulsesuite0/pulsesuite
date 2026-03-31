@@ -1,8 +1,12 @@
-"""typetime — Time grid structure for PSTD3D Maxwell solver.
+"""
+Time grid structure for PSTD3D Maxwell solver.
 
-Dataclass ``ts`` holds (t, tf, dt, n). Derived quantities (GetTArray,
-GetOmegaArray, ValidateTimeStep) are methods; trivial getters/setters
-are module-level functions for Fortran API parity.
+The ts dataclass holds four scalars (t, tf, dt, n) defining a simulation's
+time axis. Derived quantities (CalcNt, GetTArray, GetOmegaArray) are methods;
+trivial getters/setters are module-level functions for Fortran API parity.
+Includes CFL validation (ValidateTimeStep) and auto-adjustment (AutoAdjustTimeStep).
+
+Author: Emily S. Hatten
 """
 
 from __future__ import annotations
@@ -19,27 +23,41 @@ _twopi: float = 2.0 * np.pi
 LOGVERBOSE: int = 2  # mirrors Fortran LOGVERBOSE constant
 
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Local stubs (mirror Fortran fileio / logger dependencies)
+# ──────────────────────────────────────────────────────────────────────────────
+
+
 def GetFileParam(f) -> float:
     """Read one numeric parameter from an open text file handle.
 
     The parameter file format has one value per line; anything after
     the first whitespace-separated token is treated as a comment.
     """
-    line = f.readline()
-    if not line:
-        raise ValueError("Unexpected end of file while reading parameter")
-    parts = line.split()
-    if not parts:
-        raise ValueError(f"Empty line in parameter file: {line!r}")
-    try:
-        return float(parts[0])
-    except ValueError as exc:
-        raise ValueError(f"Could not parse parameter from line: {line!r}") from exc
+    while True:
+        line = f.readline()
+        if not line:
+            raise ValueError("Unexpected end of file while reading parameter")
+        stripped = line.strip()
+        if not stripped or stripped[0] in ("#", "!"):
+            continue
+        parts = stripped.split()
+        token = parts[0].rstrip(":")
+        token = token.replace("d", "e").replace("D", "E")
+        try:
+            return float(token)
+        except ValueError as exc:
+            raise ValueError(f"Could not parse parameter from line: {line!r}") from exc
 
 
 def GetLogLevel() -> int:
     """Return the current logging verbosity level (stub: always 0)."""
     return 0
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# ts — time grid dataclass
+# ──────────────────────────────────────────────────────────────────────────────
 
 
 @dataclass
@@ -68,6 +86,8 @@ class ts:
     dt: float  # time step (s)
     n: int  # current time index
 
+    # ── non-trivial derived quantities ──────────────────────────────────────
+
     def CalcNt(self) -> int:
         """Number of time steps remaining: floor((tf − t) / dt).
 
@@ -84,13 +104,9 @@ class ts:
         self.n += dn
 
     def GetTArray(self) -> NDArray[_dp]:
-        """Return a 1-D array of time values starting at ``t``.
+        """Return a 1-D array of time values from t to t + (Nt-1)*dt.
 
-        .. code-block:: text
-
-            t[i] = t + i·dt,   i = 0 … CalcNt−1
-
-        Special case: if CalcNt == 1, returns ``[0.0]`` (mirrors Fortran).
+        Returns [0.0] if CalcNt == 1 (mirrors Fortran).
 
         Returns
         -------
@@ -102,15 +118,9 @@ class ts:
         return self.t + np.arange(Nt, dtype=_dp) * self.dt
 
     def GetOmegaArray(self) -> NDArray[_dp]:
-        r"""Return angular-frequency grid conjugate to the time axis.
+        """Return angular-frequency grid conjugate to the time axis.
 
-        Uses the FFT-convention ordering (positive frequencies first, then
-        negative), identical to ``numpy.fft.fftfreq(Nt, d=dt) * 2π``:
-
-        .. code-block:: text
-
-            ω[k] = 2π·k / (Nt·dt),   k = 0 … Nt/2
-            ω[k] = 2π·(k − Nt) / (Nt·dt),  k = Nt/2+1 … Nt−1
+        Uses FFT-convention ordering via numpy.fft.fftfreq(Nt, d=dt) * 2*pi.
 
         Returns
         -------
@@ -120,65 +130,89 @@ class ts:
         return np.fft.fftfreq(Nt, d=self.dt).astype(_dp) * _twopi
 
     def GetdOmega(self) -> float:
-        r"""Return the angular-frequency step: dω = 2π / (Nt·dt)."""
+        """Return the angular-frequency step: d_omega = 2*pi / (Nt * dt)."""
         return _twopi / (self.CalcNt() * self.dt)
 
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Module-level Fortran API — trivial accessors
+# ──────────────────────────────────────────────────────────────────────────────
+
+
 def GetT(time: ts) -> float:
+    """Return the current simulation time (s)."""
     return time.t
 
 
 def GetTf(time: ts) -> float:
+    """Return the final simulation time (s)."""
     return time.tf
 
 
 def GetDt(time: ts) -> float:
+    """Return the time step (s)."""
     return time.dt
 
 
 def GetN(time: ts) -> int:
+    """Return the current time index."""
     return time.n
 
 
 def SetT(time: ts, t: float) -> None:
+    """Set the current simulation time."""
     time.t = t
 
 
 def SetTf(time: ts, tf: float) -> None:
+    """Set the final simulation time."""
     time.tf = tf
 
 
 def SetDt(time: ts, dt: float) -> None:
+    """Set the time step."""
     time.dt = dt
 
 
 def SetN(time: ts, n: int) -> None:
+    """Set the current time index."""
     time.n = n
 
 
+# ── non-trivial module-level wrappers (delegate to ts methods) ───────────────
+
+
 def CalcNt(time: ts) -> int:
+    """Number of time steps remaining.  Delegates to ``time.CalcNt()``."""
     return time.CalcNt()
 
 
 def UpdateT(time: ts, dt: float) -> None:
+    """Advance current time by ``dt``.  Delegates to ``time.UpdateT(dt)``."""
     time.UpdateT(dt)
 
 
 def UpdateN(time: ts, dn: int) -> None:
+    """Advance time index by ``dn``.  Delegates to ``time.UpdateN(dn)``."""
     time.UpdateN(dn)
 
 
 def GetTArray(time: ts) -> NDArray[_dp]:
+    """Return the time array.  Delegates to ``time.GetTArray()``."""
     return time.GetTArray()
 
 
 def GetOmegaArray(time: ts) -> NDArray[_dp]:
+    """Return the angular-frequency array.  Delegates to ``time.GetOmegaArray()``."""
     return time.GetOmegaArray()
 
 
 def GetdOmega(time: ts) -> float:
+    """Return the angular-frequency step.  Delegates to ``time.GetdOmega()``."""
     return time.GetdOmega()
 
+
+# ── validation functions (mirrors Fortran typetime enhancements) ─────────────
 
 try:
     from scipy.constants import c as _c0_val
@@ -187,13 +221,7 @@ except ImportError:  # pragma: no cover
 
 
 def ValidateTimeStep(time: ts, dx: float, dy: float, dz: float, eps_r: float) -> dict:
-    r"""Validate the time step against CFL and physics constraints.
-
-    CFL condition for 3-D PSTD:
-
-    .. math::
-
-        v\,\sqrt{3}\,\frac{\Delta t}{\min(\Delta x,\Delta y,\Delta z)} \le 1
+    """Validate the time step against the 3-D PSTD CFL condition.
 
     Parameters
     ----------
@@ -207,8 +235,7 @@ def ValidateTimeStep(time: ts, dx: float, dy: float, dz: float, eps_r: float) ->
     Returns
     -------
     dict
-        Keys: ``v_phase``, ``min_dx``, ``dt_max``, ``cfl_number``,
-        ``stable`` (bool).
+        Keys: v_phase, min_dx, dt_max, cfl_number, stable (bool).
     """
     v_phase = _c0_val / np.sqrt(eps_r)
     min_dx = min(dx, dy, dz)
@@ -227,12 +254,7 @@ def ValidateTimeStep(time: ts, dx: float, dy: float, dz: float, eps_r: float) ->
 def CalculateOptimalDt(
     dx: float, dy: float, dz: float, eps_r: float, safety: float = 0.9
 ) -> float:
-    r"""Compute an optimal CFL-safe time step.
-
-    .. math::
-
-        \Delta t_{\text{opt}} = \text{safety} \times
-            \frac{\min(\Delta x, \Delta y, \Delta z)}{v\,\sqrt{3}}
+    """Compute an optimal CFL-safe time step.
 
     Parameters
     ----------
@@ -241,7 +263,7 @@ def CalculateOptimalDt(
     eps_r : float
         Relative permittivity.
     safety : float, optional
-        Safety factor (< 1).  Default 0.9.
+        Safety factor (< 1). Default 0.9.
 
     Returns
     -------
@@ -252,6 +274,35 @@ def CalculateOptimalDt(
     min_dx = min(dx, dy, dz)
     return safety * min_dx / (v_phase * np.sqrt(3.0))
 
+
+def AutoAdjustTimeStep(
+    time: ts, dx: float, dy: float, dz: float, eps_r: float, safety: float = 0.9
+) -> None:
+    """Reduce ``time.dt`` to CFL-safe value if it currently violates CFL.
+
+    If ``time.dt`` is already within the CFL limit, no change is made.
+
+    Fortran signature parity: ``AutoAdjustTimeStep(time, dx, dy, dz, eps_r)``.
+
+    Parameters
+    ----------
+    time : ts
+        Time grid structure.  ``dt`` is modified in-place if too large.
+    dx, dy, dz : float
+        Grid spacings (m).
+    eps_r : float
+        Relative permittivity.
+    safety : float, optional
+        Safety factor (< 1).  Default 0.9.
+    """
+    dt_opt = CalculateOptimalDt(dx, dy, dz, eps_r, safety)
+    if time.dt > dt_opt:
+        time.dt = dt_opt
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# File I/O  (mirrors Fortran ReadTimeParams / WriteTimeParams)
+# ──────────────────────────────────────────────────────────────────────────────
 
 _PFRMTA = "{:25.15E}"  # E25.15E3 equivalent
 

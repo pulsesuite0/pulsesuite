@@ -1,10 +1,21 @@
-"""cpml — 3D Convolutional PML (CFS-PML) for PSTD Maxwell solver.
+"""
+3D Convolutional PML for PSTD Maxwell solver.
 
-CFS-PML stretching: s = kappa + sigma / (alpha + jw*eps0).
-Recursive convolution with 12 auxiliary psi fields (6 for E, 6 for B).
-Additive corrections to spectral PSTD update. Not thread-safe.
+EXPERIMENTAL: May be unstable on anisotropic grids. For most use cases
+the masking absorber (absorber.py, boundary_type='mask') is recommended
+instead — it is unconditionally stable and sufficient for pulse propagation.
+Use CPML only when >60 dB absorption is specifically required.
 
-References: Roden & Gedney (2000); Chen & Wang (2013).
+Implements CFS-PML (Roden & Gedney 2000, Chen & Wang 2013) with coordinate
+stretching and recursive convolution. CPML corrections are additive to the
+standard PSTD spectral update. 12 auxiliary psi fields carry convolution
+state between time steps.
+
+The inner PML loop is JIT-compiled with Numba parallel=True (mirrors
+Fortran OpenMP). Module-level functions delegate to a default CPML instance
+for Fortran API parity. Not thread-safe via the module-level default.
+
+Author: Emily S. Hatten
 """
 
 from __future__ import annotations
@@ -40,16 +51,36 @@ from ..core.fftw import fft_3D, ifft_3D
 _dp = np.float64
 _dc = np.complex128
 
-
+# ──────────────────────────────────────────────────────────────────────────────
+# Grading constants (mirror Fortran module parameters)
+# ──────────────────────────────────────────────────────────────────────────────
 _M_PROFILE: int = 4  # polynomial grading order
 _KAPPA_MAX: float = 8.0  # coordinate stretching maximum
 _ALPHA_MAX: float = 0.05  # CFS shift parameter
 _R_TARGET: float = 1.0e-8  # target reflection coefficient
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Pure helper functions (module-level, no state — Fortran "pure" subroutines)
+# ──────────────────────────────────────────────────────────────────────────────
 
 
 def CalcNPML(N: int) -> int:
-    """Optimal PML thickness: 5% of grid per side, min 6 cells, 0 if N < 32."""
+    """Compute optimal PML thickness for a grid dimension N.
+
+    Uses 5 % of the grid per side, clamped to at least 6 cells.
+    Returns 0 (no PML, periodic) when the grid is too small to
+    support a stable PML layer (< 32 cells).
+
+    Parameters
+    ----------
+    N : int
+        Grid size along one axis.
+
+    Returns
+    -------
+    int
+        Number of PML cells per side (0 = periodic, no PML).
+    """
     if N < 32:
         # Grid too small for stable PML — treat as periodic
         return 0
@@ -60,10 +91,7 @@ def CalcNPML(N: int) -> int:
 
 
 def CalcSigmaMax(L: float) -> float:
-    r"""Compute maximum conductivity for a PML of physical thickness L.
-
-    .. math::
-        \sigma_{\max} = -\frac{(m+1)\,\varepsilon_0\,c_0\,\ln R_{\rm target}}{2L}
+    """Compute maximum conductivity for a PML of physical thickness L.
 
     Parameters
     ----------
@@ -73,7 +101,7 @@ def CalcSigmaMax(L: float) -> float:
     Returns
     -------
     float
-        :math:`\sigma_{\max}` (S/m).
+        sigma_max (S/m).
     """
     return -(_M_PROFILE + 1) * _eps0 * _c0 * np.log(_R_TARGET) / (2.0 * L)
 
@@ -84,13 +112,7 @@ def CalcCoefficients1D(
     alpha: NDArray[_dp],
     dt: float,
 ) -> tuple[NDArray[_dp], NDArray[_dp]]:
-    r"""Compute CFS-PML recursive convolution coefficients b and c.
-
-    .. math::
-        b = \exp\!\left(-\left(\frac{\sigma}{\kappa}+\alpha\right)
-                        \frac{\Delta t}{\varepsilon_0}\right)
-        \qquad
-        c = \frac{\sigma}{\sigma\kappa + \alpha\kappa^2}\,(b-1)
+    """Compute CFS-PML recursive convolution coefficients b and c.
 
     Parameters
     ----------
@@ -106,8 +128,8 @@ def CalcCoefficients1D(
 
     Notes
     -----
-    Both E and H use :math:`\varepsilon_0` (not :math:`\mu_0` for H) as per
-    CFS-PML on a collocated PSTD grid (Roden & Gedney 2000).
+    Both E and H use eps_0 (not mu_0 for H) as per CFS-PML on a
+    collocated PSTD grid (Roden & Gedney 2000).
     Interior points where ``sigma = 0`` yield ``b = 1``, ``c = 0``;
     the denominator guard prevents 0/0.
     """
@@ -118,6 +140,10 @@ def CalcCoefficients1D(
     return b.astype(_dp), c.astype(_dp)
 
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Numba JIT kernels (must be module-level; Numba cannot JIT class methods)
+# fastmath=False: preserves FP order, required for correctness in field solvers.
+# ──────────────────────────────────────────────────────────────────────────────
 
 
 @njit(parallel=True, cache=True)
@@ -154,20 +180,13 @@ def _cpml_B_kernel(
     Nz,
     dt,
 ):
-    r"""B-field CPML correction kernel (Numba parallel, in-place).
+    """B-field CPML correction kernel (Numba parallel, in-place).
 
-    Applies the additive correction after the standard PSTD Faraday update:
-
-    .. math::
-        \Delta B_x = -dt \bigl[
-          (1/\kappa_y - 1)\,\partial_y E_z + \psi_{Bxy}
-          - (1/\kappa_z - 1)\,\partial_z E_y - \psi_{Bxz}
-        \bigr]
-
-    and cyclic permutations for :math:`B_y`, :math:`B_z`.
+    Applies the additive correction after the standard PSTD Faraday update,
+    and cyclic permutations for By, Bz.
 
     Arrays Bx/By/Bz are complex128 (real space after IFFT); corrections are real.
-    Arrays dE* are complex128; only the real part is used (imaginary ≈ 0 for
+    Arrays dE* are complex128; only the real part is used (imaginary ~ 0 for
     physical fields with conjugate-symmetric k-space representation).
     """
     for i in prange(Nx):  # noqa: E741  (prange replaces OpenMP parallel do)
@@ -251,19 +270,12 @@ def _cpml_E_kernel(
     v2,
     dt,
 ):
-    r"""E-field CPML correction kernel (Numba parallel, in-place).
+    """E-field CPML correction kernel (Numba parallel, in-place).
 
-    Applies the additive correction after the standard PSTD Ampere update:
+    Applies the additive correction after the standard PSTD Ampere update,
+    and cyclic permutations for Ey, Ez.
 
-    .. math::
-        \Delta E_x = v^2 dt \bigl[
-          (1/\kappa_y - 1)\,\partial_y B_z + \psi_{Exy}
-          - (1/\kappa_z - 1)\,\partial_z B_y - \psi_{Exz}
-        \bigr]
-
-    and cyclic permutations for :math:`E_y`, :math:`E_z`.
-
-    ``v2 = c_0^2 / eps_r`` is the phase velocity squared of the background medium.
+    v2 = c0^2 / eps_r is the phase velocity squared of the background medium.
     """
     for i in prange(Nx):
         in_x = (i < npml_x) or (i >= Nx - npml_x)
@@ -322,6 +334,9 @@ def _cpml_E_kernel(
                 )
 
 
+# ──────────────────────────────────────────────────────────────────────────────
+# CPML class — encapsulates all CPML state for one grid configuration
+# ──────────────────────────────────────────────────────────────────────────────
 
 
 class CPML:
@@ -345,7 +360,7 @@ class CPML:
     epsr : float, optional
         Background relative permittivity.  Accepted for API parity with
         Fortran ``InitCPML``; not used in the CFS-PML coefficient formulae
-        (which use :math:`\\varepsilon_0` regardless of the medium).
+        (which use eps_0 regardless of the medium).
 
     Notes
     -----
@@ -432,24 +447,17 @@ class CPML:
 
         print("=== CPML Initialization Complete ===")
 
+    # ──────────────────────────────────────────────────────────────────────────
+    # Private helpers
+    # ──────────────────────────────────────────────────────────────────────────
 
     @staticmethod
     def _build_profile_1d(
         N: int, h: float, npml: int
     ) -> tuple[NDArray[_dp], NDArray[_dp], NDArray[_dp]]:
-        r"""Build σ, κ, α profiles graded from the outer PML edge inward.
+        """Build sigma, kappa, alpha profiles graded from the outer PML edge inward.
 
-        .. math::
-            \sigma(d) = \sigma_{\max}(d/L)^m
-            \quad
-            \kappa(d) = 1 + (\kappa_{\max}-1)(d/L)^m
-            \quad
-            \alpha(d) = \alpha_{\max}(1 - d/L)
-
-        where :math:`d` is the fractional depth into the PML
-        (0 = interior edge, 1 = outer wall) and :math:`L = \text{npml} \cdot h`.
-
-        Index conversion (Fortran 1-based → Python 0-based):
+        Index conversion (Fortran 1-based to Python 0-based):
         - Left PML  (``i < npml``):  ``pos = (npml - 1 - i + 0.5) / npml``
         - Right PML (``i >= N-npml``): ``pos = (i - (N - npml) + 0.5) / npml``
         The half-cell offset (``+0.5``) preserves the Fortran grading profile.
@@ -486,7 +494,7 @@ class CPML:
         axis: int,
         out: NDArray[_dc],
     ) -> None:
-        r"""Compute :math:`\text{IFFT}(i\,k\,\hat{F})` into ``out`` (in-place).
+        """Compute IFFT(i*k*F_hat) into ``out`` (in-place).
 
         Parameters
         ----------
@@ -510,6 +518,9 @@ class CPML:
         np.multiply(1j * k_1d.reshape(shape), field_kspace, out=out)
         ifft_3D(out)
 
+    # ──────────────────────────────────────────────────────────────────────────
+    # Public API — Fortran name parity
+    # ──────────────────────────────────────────────────────────────────────────
 
     def ApplyCPML_B(
         self,
@@ -524,18 +535,11 @@ class CPML:
         kz: NDArray[_dp],
         dt: float,
     ) -> None:
-        r"""Apply CPML correction to B fields after standard PSTD update.
+        """Apply CPML correction to B fields after standard PSTD update.
 
         The standard PSTD Faraday update computes
-        ``B = B - dt·(∇×E)`` spectrally.  This method adds:
-
-        .. math::
-            \Delta B_x = -dt \bigl[
-              (1/\kappa_y - 1)\,\partial_y E_z + \psi_{Bxy}
-              - (1/\kappa_z - 1)\,\partial_z E_y - \psi_{Bxz}
-            \bigr]
-
-        (and cyclic permutations for :math:`B_y`, :math:`B_z`).
+        ``B = B - dt*(curl E)`` spectrally.  This method adds the CPML
+        correction terms (and cyclic permutations for By, Bz).
 
         Parameters
         ----------
@@ -622,18 +626,11 @@ class CPML:
         v2: float,
         dt: float,
     ) -> None:
-        r"""Apply CPML correction to E fields after standard PSTD update.
+        """Apply CPML correction to E fields after standard PSTD update.
 
         The standard PSTD Ampere update computes
-        ``E = E + v²·dt·(∇×B)`` spectrally.  This method adds:
-
-        .. math::
-            \Delta E_x = v^2 dt \bigl[
-              (1/\kappa_y - 1)\,\partial_y B_z + \psi_{Exy}
-              - (1/\kappa_z - 1)\,\partial_z B_y - \psi_{Exz}
-            \bigr]
-
-        (and cyclic permutations for :math:`E_y`, :math:`E_z`).
+        ``E = E + v2*dt*(curl B)`` spectrally.  This method adds the CPML
+        correction terms (and cyclic permutations for Ey, Ez).
 
         Parameters
         ----------
@@ -644,7 +641,7 @@ class CPML:
         kx, ky, kz : float64 ndarray
             Wavenumber arrays.
         v2 : float
-            Phase velocity squared :math:`c_0^2 / \varepsilon_r` (m²/s²).
+            Phase velocity squared, c0^2 / eps_r (m^2/s^2).
         dt : float
             Time step (s).
         """
@@ -736,6 +733,12 @@ class CPML:
         )
 
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Module-level default instance — Fortran subroutine API parity
+#
+# NOT thread-safe (mirrors Fortran module singleton).
+# For concurrent use or multiple CPML configurations, instantiate CPML directly.
+# ──────────────────────────────────────────────────────────────────────────────
 
 _default: CPML | None = None  # NOT thread-safe
 

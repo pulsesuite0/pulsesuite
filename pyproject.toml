@@ -72,6 +72,13 @@ test = [
     "pytest>=8.3.4",
     "pytest-cov>=4.0.0",
     "pytest-xdist>=3.0.0",
+    "pytest-benchmark>=4.0.0",
+]
+dev = [
+    "ruff>=0.4.0",
+    "pre-commit>=3.0.0",
+    "bandit>=1.7.0",
+    "safety>=3.0.0",
 ]
 gpu = [
     "cupy-cuda12x>=13.5.0",    # GPU array ops (requires CUDA 12 driver)
@@ -109,7 +116,7 @@ where = ["src"]
 # Ruff configuration for linting
 [tool.ruff]
 line-length = 88
-target-version = "py39"
+target-version = "py310"
 
 [tool.ruff.lint]
 extend-select = [
@@ -117,6 +124,8 @@ extend-select = [
     "F",  # pyflakes
     "I",  # isort
     "W",  # pycodestyle warnings
+    "S",  # flake8-bandit (security)
+    "B",  # flake8-bugbear
 ]
 
 ignore = [
@@ -131,6 +140,11 @@ ignore = [
     "F405",  # May be undefined from star imports — related to F403
     "F811",  # Redefinition of unused name — backward-compatible shims intentionally override
     "F841",  # Local variable assigned but never used — physics arrays often pre-allocated
+    "S101",  # Use of assert — standard in tests and scientific validation
+    "S110",  # try-except-pass — used for optional JIT/CUDA detection
+    "S108",  # Insecure temp file — benchmark uses /tmp intentionally
+    "S607",  # Partial executable path — nvidia-smi is standard
+    "B905",  # zip without strict — legacy code, many-arg zips
 ]
 
 exclude = [
@@ -188,6 +202,9 @@ exclude_lines = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
+
+[tool.bandit]
+exclude_dirs = ["tests"]
 
 [tool.mypy]
 check_untyped_defs = true

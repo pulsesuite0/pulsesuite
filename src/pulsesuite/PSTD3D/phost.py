@@ -51,7 +51,9 @@ def _CalcNextP_jit(E_size1, E_size2, osc, P1, P2, E, dt, gam, w, B, eps0_val):
     return CalcNextP
 
 
-@jit(nopython=True, fastmath=True, cache=True)  # fastmath OK: element-wise multiply, no accumulation
+@jit(
+    nopython=True, fastmath=True, cache=True
+)  # fastmath OK: element-wise multiply, no accumulation
 def _CalcMonoP_jit(E_size1, E_size2, osc, E, chi1_real, eps0_val):
     """JIT-compiled version of CalcMonoP."""
     CalcMonoP = np.zeros((E_size1, E_size2, osc), dtype=np.complex128)
