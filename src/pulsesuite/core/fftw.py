@@ -1,11 +1,212 @@
-"""FFT wrappers for PSTD3D, ported from Fortran fftw module.
+# """fastfft.py – pure‑Python re‑implementation of your Fortran FFT/Hankel module.
 
-Uses SciPy FFT by default with optional pyFFTW acceleration.
-Includes Hankel transform support for radial grids.
+# Goals
+# -----
+# * **No f2py** or compiled Fortran dependency.
+# * **Maximum speed** by leaning on
+#   * `pyfftw` (FFTW under the hood, GIL‑free, multi‑threaded)
+#   * `numba` for the tiny Nyquist sign‑flip kernels
+#   * `scipy.special` to build the Hankel matrix only when needed.
+# * API mirrors the original Fortran names where it makes sense.
 
-Author: Emily S. Hatten
-"""
+# Install dependencies first::
 
+#     pip install pyfftw numba scipy numpy
+
+# This file should sit in your regular Python package so you can simply::
+
+#     import fastfft as ff
+#     ff.fft_3d(arr)
+# """
+# from __future__ import annotations
+
+# import os
+# from functools import lru_cache
+# from typing import Dict, Tuple
+
+# import numpy as np
+# import pyfftw
+# from numba import njit, prange
+# from scipy import special as _sp
+
+
+# # -----------------------------------------------------------------------------
+# # Global FFTW configuration
+# # -----------------------------------------------------------------------------
+# pyfftw.interfaces.cache.enable()               # share wisdom across runs
+# pyfftw.config.NUM_THREADS = os.cpu_count() or 1
+
+# # Dict key: (shape, axes, norm, direction, centered)
+# _FFT_PLANS: Dict[Tuple, pyfftw.FFTW] = {}
+
+
+# # -----------------------------------------------------------------------------
+# # Nyquist sign‑flip helpers (rank‑generic with Numba JIT)
+# # -----------------------------------------------------------------------------
+# @njit(parallel=True, fastmath=True)
+# def _nyquist_nd(x: np.ndarray):
+#     for idx in np.ndindex(x.shape):
+#         if sum(idx) & 1 == 0:
+#             x[idx] = -x[idx]
+
+
+# def _maybe_center(x: np.ndarray, centered: bool):
+#     if centered:
+#         _nyquist_nd(x)
+
+
+# # -----------------------------------------------------------------------------
+# # FFT wrappers (1D/2D/3D) – behave in‑place like Fortran
+# # -----------------------------------------------------------------------------
+
+# def _get_plan(x: np.ndarray, axes, direction: str, centered: bool):
+#     key = (x.shape, axes, direction, centered)
+#     plan = _FFT_PLANS.get(key)
+#     if plan is None:
+#         if direction == "forward":
+#             plan = pyfftw.builders.fftn(
+#                 x,
+#                 axes=axes,
+#                 threads=os.cpu_count() or 1,
+#                 planner_effort="FFTW_ESTIMATE",
+#                 overwrite_input=True,
+#             )
+#         else:
+#             plan = pyfftw.builders.ifftn(
+#                 x,
+#                 axes=axes,
+#                 threads=os.cpu_count() or 1,
+#                 planner_effort="FFTW_ESTIMATE",
+#                 overwrite_input=True,
+#             )
+#         _FFT_PLANS[key] = plan
+#     return plan
+
+
+# def _fft_generic(x: np.ndarray, axes, direction="forward", centered=False):
+#     if x.dtype != np.complex128:
+#         raise TypeError("Input array must be complex128 to match dp kind.")
+#     _maybe_center(x, centered)            # pre‑shift for centred FFT
+#     plan = _get_plan(x, axes, direction, centered)
+#     plan()  # in-place operation
+#     _maybe_center(x, centered)            # post‑shift
+
+
+# # Public API – names mirror the Fortran one‑liners -----------------------------
+
+# fft_1d   = lambda x, centered=False: _fft_generic(x, axes=(-1,), direction="forward",  centered=centered)
+# ifft_1d  = lambda x, centered=False: _fft_generic(x, axes=(-1,), direction="backward", centered=centered)
+# fftc_1d  = lambda x: _fft_generic(x, axes=(-1,), direction="forward",  centered=True)
+# ifftc_1d = lambda x: _fft_generic(x, axes=(-1,), direction="backward", centered=True)
+
+# fft_2d   = lambda x, centered=False: _fft_generic(x, axes=(-2, -1), direction="forward",  centered=centered)
+# ifft_2d  = lambda x, centered=False: _fft_generic(x, axes=(-2, -1), direction="backward", centered=centered)
+# fftc_2d  = lambda x: _fft_generic(x, axes=(-2, -1), direction="forward",  centered=True)
+# ifftc_2d = lambda x: _fft_generic(x, axes=(-2, -1), direction="backward", centered=True)
+
+# fft_3d   = lambda x, centered=False: _fft_generic(x, axes=(-3, -2, -1), direction="forward",  centered=centered)
+# ifft_3d  = lambda x, centered=False: _fft_generic(x, axes=(-3, -2, -1), direction="backward", centered=centered)
+# fftc_3d  = lambda x: _fft_generic(x, axes=(-3, -2, -1), direction="forward",  centered=True)
+# ifftc_3d = lambda x: _fft_generic(x, axes=(-3, -2, -1), direction="backward", centered=True)
+
+
+# # -----------------------------------------------------------------------------
+# # Hankel transform helpers – only used when radial grid collapses to 1
+# # -----------------------------------------------------------------------------
+# @lru_cache(maxsize=8)
+# def _hankel_matrix(nr: int) -> np.ndarray:
+#     """Return dense Hankel‑transform matrix H (nr×nr) as in the Fortran code."""
+#     a = _sp.jn_zeros(0, nr + 1)          # J0 zeros a[0]..a[nr]
+#     H = np.empty((nr, nr), dtype=np.float64)
+#     for n in range(nr):
+#         J1 = _sp.jv(1, a[n])
+#         for m in range(nr):
+#             H[m, n] = (2.0 / a[-1]) * _sp.jv(0, (a[m] * a[n]) / a[-1]) / J1 ** 2
+#     return H
+
+
+# def hankel_transform(f: np.ndarray):
+#     """In‑place Hankel transform for a 1‑D radial slice f[ r ]."""
+#     if f.ndim != 1:
+#         raise ValueError("Hankel transform expects 1‑D vector")
+#     H = _hankel_matrix(f.shape[0])
+#     f[:] = H @ f
+
+
+# # -----------------------------------------------------------------------------
+# # Mixed Transform (radial=1 -> Hankel+FFT, else full FFT)
+# # -----------------------------------------------------------------------------
+
+# def transform(e: np.ndarray):
+#     """Mimic Fortran \`Transform\`: if Nx==1 use Hankel+FFT else 3‑D FFT."""
+#     if e.shape[0] == 1:
+#         # radial Hankel on (Ny, Nt) slabs, then 1‑D FFT along t
+#         for k in range(e.shape[2]):
+#             hankel_transform(e[0, :, k])
+#         for j in range(e.shape[1]):
+#             fft_1d(e[0, j, :])
+#     else:
+#         fft_3d(e)
+
+
+# def itransform(e: np.ndarray):
+#     if e.shape[0] == 1:
+#         for k in range(e.shape[2]):
+#             hankel_transform(e[0, :, k])
+#         for j in range(e.shape[1]):
+#             ifft_1d(e[0, j, :])
+#     else:
+#         ifft_3d(e)
+
+
+# # -----------------------------------------------------------------------------
+# # Convenience field routines (FFT in (x,y), inverse FFT in t) ---------------
+# # -----------------------------------------------------------------------------
+
+# def fft_field(e: np.ndarray):
+#     """Replicates the Fortran \`fft_field\`: 2‑D FFT over x,y then IFFT over t."""
+#     for k in range(e.shape[2]):
+#         fft_2d(e[:, :, k])
+#     for j in range(e.shape[1]):
+#         for i in range(e.shape[0]):
+#             ifft_1d(e[i, j, :])
+#     e *= e.shape[2]
+
+
+# def ifft_field(e: np.ndarray):
+#     for k in range(e.shape[2]):
+#         ifft_2d(e[:, :, k])
+#     for j in range(e.shape[1]):
+#         for i in range(e.shape[0]):
+#             fft_1d(e[i, j, :])
+#     e /= e.shape[2]
+
+
+# # -----------------------------------------------------------------------------
+# # __all__ for clean import * ---------------------------------------------------
+# # -----------------------------------------------------------------------------
+# __all__ = [
+#     "fft_1d", "ifft_1d", "fftc_1d", "ifftc_1d",
+#     "fft_2d", "ifft_2d", "fftc_2d", "ifftc_2d",
+#     "fft_3d", "ifft_3d", "fftc_3d", "ifftc_3d",
+#     "transform", "itransform", "fft_field", "ifft_field",
+# ]
+
+# fftw.py
+# Port of the Fortran module `fftw` with accelerated FFTs and optional Hankel mix.
+#
+# Design goals (Fortran -> Python/HPC):
+# - Preserve routine names/signatures (fft_1D/2D/3D, ifft_*, fftc_*, ifftc_*, nyquist_*)
+# - Default to SciPy FFT (MKL/FFTW-backed in many clusters); optional pyFFTW if available
+# - Keep arrays float64/complex128 and Fortran-contiguous (`order='F'`)
+# - In-place semantics: compute into a scratch and assign back to the provided array
+# - Provide Transform/iTransform + HankelTransform + CreateHT using Bessel J0 zeros
+# - No nested parallelism; rely on vendor FFT threading
+#
+# Math note: "Centered FFT" uses the multiplicative Nyquist phase factor (−1)^{i(+j)(+k)}
+#   before and after the transform (a la Gulley-style centering) rather than shifting.
+#   (Fourier shift property)
+#
 from __future__ import annotations
 
 import os

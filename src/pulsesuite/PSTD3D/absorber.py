@@ -1,8 +1,15 @@
-"""Multiplicative masking absorber (Kosloff & Kosloff 1986).
+r"""absorber — Multiplicative masking absorber (Kosloff & Kosloff 1986).
 
-Polynomial grading with m=3, unconditionally stable. Module-level state, not thread-safe.
+.. math::
 
-Author: Emily S. Hatten
+    F^{n+1}(\mathbf{r}) = F^{n+1}_{\text{Maxwell}}(\mathbf{r})
+                          \times \exp(-\gamma_{\max}\,\rho^m\,\Delta t)
+
+Unconditionally stable (|mask| <= 1, no recursive state).
+Polynomial grading with m=3 (Taflove & Hagness 2005, Sec. 7.6).
+Module-level state, not thread-safe.
+
+References: Kosloff & Kosloff (1986) JCP 63:363; Chen (2024) arXiv:2403.04053v2.
 """
 
 from __future__ import annotations

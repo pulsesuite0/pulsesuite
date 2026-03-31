@@ -639,7 +639,7 @@ def mmid(y, dydx, xs, htot, nstep, D):
 
     yout = D(x, yn)
 
-    for _n in range(2, nstep + 1):
+    for n in range(2, nstep + 1):
         swap_tmp = ym + 2.0 * h * yout
         ym = yn.copy()
         yn = swap_tmp
@@ -960,7 +960,7 @@ def simpr(y, dydx, dfdx, dfdy, xs, htot, nstep, derivs):
     yout = derivs(x, ytemp)
 
     # Corrector loop
-    for _nn in range(2, nstep + 1):
+    for nn in range(2, nstep + 1):
         yout = h * yout - delta
         lubksb(a, indx, yout)
         delta = delta + 2.0 * yout
