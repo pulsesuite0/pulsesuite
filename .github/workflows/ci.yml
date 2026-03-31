@@ -63,17 +63,13 @@ jobs:
     - name: Install linting dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install ruff black mypy
+        pip install ruff
 
     - name: Run ruff
       run: |
         ruff check src/ tests/
 
-    - name: Check formatting with black
+    - name: Check formatting with ruff
       run: |
-        black --check src/ tests/
-
-    - name: Run mypy
-      run: |
-        mypy src/pulsesuite --ignore-missing-imports || true
+        ruff format --check src/ tests/
 

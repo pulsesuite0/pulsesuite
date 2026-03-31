@@ -370,13 +370,17 @@ def _DriftVt_jit(n, Ec, dkk, hbar_val):
     return np.real(v)
 
 
-@jit(nopython=True, fastmath=True, cache=True)  # fastmath OK: element-wise scalar arithmetic
+@jit(
+    nopython=True, fastmath=True, cache=True
+)  # fastmath OK: element-wise scalar arithmetic
 def _Lrtz_jit(a, b):
     pi_val = 3.141592653589793
     return (b / pi_val) / (a**2 + b**2)
 
 
-@jit(nopython=True, fastmath=True, cache=True)  # fastmath OK: element-wise scalar arithmetic
+@jit(
+    nopython=True, fastmath=True, cache=True
+)  # fastmath OK: element-wise scalar arithmetic
 def _theta_jit(x):
     small = 1e-200
     return (np.abs(x) + x) / 2.0 / (np.abs(x) + small)

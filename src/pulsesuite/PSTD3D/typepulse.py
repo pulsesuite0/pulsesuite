@@ -1,10 +1,8 @@
-"""typepulse — Laser pulse parameter structure.
+"""Laser pulse parameter structure for PSTD3D.
 
-Fortran divergences:
-  - ``lambda`` → ``lambda_`` (Python reserved keyword).
-  - ``SetLambda`` accepts float (Fortran source had integer — a bug).
-  - ``CalcRayleigh(pulse, w0)`` requires explicit w0; Fortran source
-    mistakenly used omega0 in place of w0 in z_R = pi*w0^2/lambda.
+Mirrors Fortran type ps (typepulse.f90). Uses lambda_ instead of lambda (reserved).
+
+Author: Emily S. Hatten
 """
 
 from __future__ import annotations
@@ -52,24 +50,17 @@ class ps:
     Parameters
     ----------
     lambda_ : float
-        Vacuum carrier wavelength (m).  Named ``lambda_`` because ``lambda``
-        is a Python reserved word; Fortran field is ``pulse%lambda``.
+        Vacuum carrier wavelength (m).
     Amp : float
         Peak electric-field amplitude (V/m).
     Tw : float
-        Gaussian pulse width parameter (s).  The 1/e intensity half-width
-        is τ = Tw / (2√ln2); see ``CalcTau``.
+        Gaussian pulse width parameter (s). Intensity FWHM; see CalcTau.
     Tp : float
         Time at which the pulse peak crosses the origin x = 0 (s).
     chirp : float
-        Linear frequency chirp coefficient (rad/s²).  The instantaneous
-        carrier phase is ω₀·delay + chirp·delay².
+        Linear frequency chirp coefficient (rad/s^2).
     pol : int, optional
         Polarisation index (default 0).
-
-    Notes
-    -----
-    Mirrors Fortran ``type ps`` (``typepulse.f90``).
     """
 
     lambda_: float  # vacuum wavelength (m)
@@ -81,68 +72,48 @@ class ps:
     w0: float = float("inf")  # beam waist radius (m); inf = plane wave
 
     def CalcK0(self) -> float:
-        r"""Carrier wavenumber :math:`k_0 = 2\pi / \lambda` (rad/m)."""
+        """Carrier wavenumber k0 = 2*pi / lambda (rad/m)."""
         return _twopi / self.lambda_
 
     def CalcFreq0(self) -> float:
-        r"""Carrier frequency :math:`\nu_0 = c_0 / \lambda` (Hz)."""
+        """Carrier frequency nu0 = c0 / lambda (Hz)."""
         return _c0 / self.lambda_
 
     def CalcOmega0(self) -> float:
-        r"""Carrier angular frequency :math:`\omega_0 = 2\pi c_0 / \lambda` (rad/s)."""
+        """Carrier angular frequency omega0 = 2*pi*c0 / lambda (rad/s)."""
         return _twopi * _c0 / self.lambda_
 
     def CalcTau(self) -> float:
-        r"""Gaussian 1/e field half-width: :math:`\tau_G = T_w / \sqrt{2\ln 2}` (s).
-
-        For the field convention :math:`E(t) \propto \exp(-t^2/\tau_G^2)`,
-        the intensity FWHM is :math:`T_w` (the ``Tw`` attribute).
-        """
+        """Gaussian 1/e field half-width: tau_G = Tw / sqrt(2*ln2) (s)."""
         return self.Tw / np.sqrt(2.0 * np.log(2.0))
 
     def CalcDeltaOmega(self) -> float:
-        r"""Spectral FWHM (angular frequency, rad/s).
+        """Spectral FWHM (angular frequency, rad/s).
 
-        .. math::
-
-            \Delta\omega = \frac{\sqrt{8 \ln 2\,(1 + a^2)}}{\tau_G}
-
-        where :math:`a = \chi\,\tau_G^2` is the dimensionless chirp parameter.
-        For an unchirped pulse (:math:`a = 0`) this reduces to
-        :math:`\sqrt{8\ln 2}/\tau_G`.
+        Includes chirp broadening via dimensionless chirp parameter a = chirp * tau_G^2.
         """
         tau_G = self.CalcTau()
         a = self.chirp * tau_G**2
         return np.sqrt(8.0 * np.log(2.0) * (1.0 + a**2)) / tau_G
 
     def CalcTime_BandWidth(self) -> float:
-        r"""Time–bandwidth product :math:`\tau_G \cdot \Delta\omega` (dimensionless).
-
-        For an unchirped Gaussian this equals :math:`\sqrt{8\ln 2} \approx 2.355`.
-        """
+        """Time-bandwidth product tau_G * Delta_omega (dimensionless)."""
         return self.CalcDeltaOmega() * self.CalcTau()
 
     def CalcRayleigh(self, w0: float) -> float:
-        r"""Rayleigh range :math:`z_R = \pi w_0^2 / \lambda` (m).
+        """Rayleigh range z_R = pi * w0^2 / lambda (m).
 
         Parameters
         ----------
         w0 : float
             Beam waist radius (m) at the focus.
-
-        Notes
-        -----
-        The Fortran source erroneously used ``CalcOmega0(pulse)`` (angular
-        frequency, rad/s) in place of ``w0`` (beam waist, m), yielding a
-        dimensionally incorrect result.  This implementation requires ``w0``
-        explicitly.
         """
         return _pi * w0**2 / self.lambda_
 
     def CalcCurvature(self, x: float, w0: float) -> float:
-        r"""Wavefront curvature radius :math:`R(x) = x\,[1 + (z_R/x)^2]` (m).
+        """Wavefront curvature radius R(x) = x * [1 + (z_R/x)^2] (m).
 
-        Returns ``inf`` at ``x = 0`` (planar wavefront at the waist).
+        Returns inf at x = 0 (planar wavefront at the waist).
 
         Parameters
         ----------
@@ -157,7 +128,7 @@ class ps:
         return x * (1.0 + (xR / x) ** 2)
 
     def CalcGouyPhase(self, x: float, w0: float) -> float:
-        r"""Gouy phase :math:`\phi_G(x) = \arctan(x / z_R)` (rad).
+        """Gouy phase phi_G(x) = arctan(x / z_R) (rad).
 
         Parameters
         ----------
@@ -169,17 +140,9 @@ class ps:
         return np.arctan(x / self.CalcRayleigh(w0))
 
     def PulseFieldXT(self, x: float, t: float) -> complex:
-        r"""Complex pulse electric field at position ``x``, time ``t``.
+        """Complex pulse electric field at position x, time t.
 
-        .. math::
-
-            E(x,t) = A \exp\!\left(-\frac{\tau^2}{\tau_G^2}\right)
-                       \exp\!\left[i\!\left(\omega_0 \tau + \chi \tau^2\right)\right]
-
-        where :math:`\tau = t - T_p - x/c_0` is the retarded time in the
-        pulse frame, :math:`\tau_G = T_w / \sqrt{2\ln 2}` is the Gaussian
-        1/e field half-width, :math:`\chi` is the chirp coefficient, and the
-        carrier is embedded in the exponential (analytic-signal representation).
+        Uses retarded time tau = t - Tp - x/c0 with chirped Gaussian envelope.
 
         Parameters
         ----------
@@ -200,15 +163,9 @@ class ps:
         return complex(envelope * np.exp(1j * phase))
 
     def PulseField3D(self, x: float, y: float, z: float, t: float) -> float:
-        r"""Real 3-D pulse electric field :math:`E(x,y,z,t)`.
+        """Real 3-D pulse electric field E(x, y, z, t).
 
-        .. math::
-
-            E = A\,\exp\!\left(-\frac{y^2+z^2}{w_0^2}\right)
-                \exp\!\left(-\frac{\tau^2}{\tau_G^2}\right)
-                \cos(\omega_0 \tau + \chi \tau^2)
-
-        where :math:`\tau = t - T_p - x/c_0` is the retarded time.
+        Chirped Gaussian pulse with transverse Gaussian beam profile.
 
         Parameters
         ----------
