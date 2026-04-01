@@ -8,9 +8,9 @@ fonttools==4.62.1
     # via matplotlib
 kiwisolver==1.5.0
     # via matplotlib
-llvmlite==0.44.0
+llvmlite==0.47.0
     # via numba
-matplotlib==3.10.6
+matplotlib==3.10.8
     # via pulsesuite (pyproject.toml)
 numba==0.61.2
     # via pulsesuite (pyproject.toml)
@@ -24,7 +24,7 @@ numpy==2.2.6
     #   scipy
 packaging==26.0
     # via matplotlib
-pillow==12.1.1
+pillow==12.2.0
     # via matplotlib
 pyfftw==0.15.0
     # via pulsesuite (pyproject.toml)
