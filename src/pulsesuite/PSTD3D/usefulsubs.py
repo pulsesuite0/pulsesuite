@@ -32,9 +32,7 @@ small = 1e-100
 kB = 1.380649e-23
 
 
-@jit(
-    nopython=True, fastmath=True, cache=True
-)  # fastmath OK: index permutation, no arithmetic
+@jit(nopython=True, fastmath=True, cache=True)  # fastmath OK: index permutation, no arithmetic
 def _fflip_dp_jit(f):
     """JIT-compiled version of fflip_dp."""
     N = len(f)
@@ -44,9 +42,7 @@ def _fflip_dp_jit(f):
     return result
 
 
-@jit(
-    nopython=True, fastmath=True, cache=True
-)  # fastmath OK: index permutation, no arithmetic
+@jit(nopython=True, fastmath=True, cache=True)  # fastmath OK: index permutation, no arithmetic
 def _fflip_dpc_jit(f):
     """JIT-compiled version of fflip_dpc."""
     N = len(f)
@@ -265,9 +261,7 @@ def dfdy1D_q(f, qy):
     return f * (ii * qy)
 
 
-@jit(
-    nopython=True, fastmath=True, cache=True
-)  # fastmath OK: element-wise complex multiply
+@jit(nopython=True, fastmath=True, cache=True)  # fastmath OK: element-wise complex multiply
 def _dfdy2D_q_jit(f, qy, ii_val):
     """JIT-compiled version of dfdy2D_q."""
     Nx = f.shape[0]
@@ -343,9 +337,7 @@ def dfdx1D_q(f, qx):
     return f * (ii * qx)
 
 
-@jit(
-    nopython=True, fastmath=True, cache=True
-)  # fastmath OK: element-wise complex multiply
+@jit(nopython=True, fastmath=True, cache=True)  # fastmath OK: element-wise complex multiply
 def _dfdx2D_q_jit(f, qx, ii_val):
     """JIT-compiled version of dfdx2D_q."""
     Nx = f.shape[0]
@@ -617,9 +609,7 @@ def ApplyABC(Field, abc):
     Field[:, :] = pyfftw.interfaces.numpy_fft.fft2(Field)
 
 
-@jit(
-    nopython=True, fastmath=True, cache=True
-)  # fastmath OK: element-wise finite difference
+@jit(nopython=True, fastmath=True, cache=True)  # fastmath OK: element-wise finite difference
 def _dEdx_jit(E, dx, iu):
     """JIT-compiled version of dEdx."""
     Nx = E.shape[0]
@@ -665,9 +655,7 @@ def dEdx(E, dx):
     return _dEdx_jit(E, dx, iu)
 
 
-@jit(
-    nopython=True, fastmath=True, cache=True
-)  # fastmath OK: element-wise finite difference
+@jit(nopython=True, fastmath=True, cache=True)  # fastmath OK: element-wise finite difference
 def _dEdy_jit(E, dy, ju):
     """JIT-compiled version of dEdy."""
     Nx = E.shape[0]
@@ -713,9 +701,7 @@ def dEdy(E, dy):
     return _dEdy_jit(E, dy, ju)
 
 
-@jit(
-    nopython=True, fastmath=True, cache=True
-)  # fastmath OK: element-wise finite difference
+@jit(nopython=True, fastmath=True, cache=True)  # fastmath OK: element-wise finite difference
 def _dHdx_jit(H, dx, id_arr):
     """JIT-compiled version of dHdx."""
     Nx = H.shape[0]
@@ -761,9 +747,7 @@ def dHdx(H, dx):
     return _dHdx_jit(H, dx, id_arr)
 
 
-@jit(
-    nopython=True, fastmath=True, cache=True
-)  # fastmath OK: element-wise finite difference
+@jit(nopython=True, fastmath=True, cache=True)  # fastmath OK: element-wise finite difference
 def _dHdy_jit(H, dy, jd):
     """JIT-compiled version of dHdy."""
     Nx = H.shape[0]
@@ -1365,9 +1349,7 @@ def rad(degrees):
     return degrees * pi / 180.0
 
 
-@jit(
-    nopython=True, fastmath=True, cache=True
-)  # fastmath OK: element-wise rotation, no accumulation
+@jit(nopython=True, fastmath=True, cache=True)  # fastmath OK: element-wise rotation, no accumulation
 def _RotateField3D_jit(Ex0, Ey0, Ez0, R11, R12, R13, R21, R22, R23, R31, R32, R33):
     """JIT-compiled version of RotateField3D."""
     Nx = Ex0.shape[0]
@@ -1441,9 +1423,7 @@ def RotateField3D(theta, Ex, Ey, Ez):
     )
 
 
-@jit(
-    nopython=True, fastmath=True, cache=True
-)  # fastmath OK: element-wise rotation, no accumulation
+@jit(nopython=True, fastmath=True, cache=True)  # fastmath OK: element-wise rotation, no accumulation
 def _RotateField_jit(Ex0, Ey0, R11, R12, R21, R22):
     """JIT-compiled version of RotateField."""
     Nx = Ex0.shape[0]
