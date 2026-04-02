@@ -3723,9 +3723,7 @@ def GetArrays(x, qx, kx):
     _NQ0 = GetArray0Index(qx)
 
 
-@jit(
-    nopython=True, parallel=True, fastmath=True, cache=True
-)  # fastmath OK: integer index arithmetic, no accumulation
+@jit(nopython=True, parallel=True, fastmath=True, cache=True)  # fastmath OK: integer index arithmetic, no accumulation
 def _MakeKKP_jit(Nk, kr, dkr, NQ0, kkp):
     """JIT-compiled parallel version of MakeKKP computation."""
     from numba import prange
