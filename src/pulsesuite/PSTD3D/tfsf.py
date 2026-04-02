@@ -1,9 +1,18 @@
-"""Additive soft-source injection for PSTD3D Maxwell solver.
+r"""tfsf — Additive soft-source injection for PSTD3D Maxwell solver.
 
-Adds incident field via smooth Gaussian profile to avoid Gibbs oscillations.
-Unidirectional +x injection via impedance-matched Ey and Bz.
+Adds incident field via smooth Gaussian profile to avoid Gibbs oscillations
+from spectral derivatives (Liu 1997; Schneider 2010, Sec. 5.5):
 
-Author: Emily S. Hatten
+.. math::
+
+    E(\mathbf{r}) = E_{\text{prop}}(\mathbf{r})
+                   + S(x)\,E_{\text{inc}}(\mathbf{r}, t)
+
+Unidirectional +x injection via impedance-matched Ey and Bz
+(Taflove & Hagness 2005, Sec. 5.2.1).
+
+References: Liu (1997) MOTL 15:158; Schneider (2010) Ch. 5;
+Taflove & Hagness (2005) Ch. 5; Munro et al. (2015) JBO 20:095007.
 """
 
 from __future__ import annotations
@@ -23,18 +32,37 @@ _dc = np.complex128
 _twopi = 2.0 * np.pi
 
 
-def InitializeTFSF(space, pulse) -> NDArray[_dp]:
-    """Compute the 1-D normalised Gaussian source profile.
 
-    Uses a narrow Gaussian with sigma = 5*dx, normalised so that
-    sum(S * dx) ~ 1. This avoids Gibbs ringing from the spectral derivatives.
+def InitializeTFSF(space, pulse) -> NDArray[_dp]:
+    r"""Compute the 1-D normalised Gaussian source profile.
+
+    The previous implementation used a wide super-Gaussian window (order 6,
+    width up to 10 % of the grid).  This caused Gibbs ringing and
+    wraparound in the spectral derivatives because the near-discontinuous
+    transition at the window edges introduced high-*k* content (Liu 1997;
+    Munro *et al.* 2015).
+
+    **Fix**: a narrow Gaussian with :math:`\sigma = 5\,\Delta x`, normalised
+    so that :math:`\sum S(x)\,\Delta x \approx 1`.
+
+    Why :math:`\sigma = 5\,\Delta x`:
+
+    - The Gaussian is sampled by >10 points across its :math:`2\sigma`
+      width, satisfying Nyquist for its own spectral content (Shannon 1949,
+      *Proc. IRE* 37:10).  Its Fourier transform has spectral width
+      :math:`1/\sigma`, which equals :math:`\sim 6\%` of
+      :math:`k_{\text{Nyquist}} = \pi/\Delta x`.
+    - The profile decays to :math:`e^{-12.5} \approx 3.7 \times 10^{-6}` at
+      5 cells from centre and to machine zero at ~16 cells.
+    - Normalisation makes the emitted amplitude proportional to
+      ``Emax_amp``, independent of :math:`\sigma` or :math:`\Delta x`.
 
     Parameters
     ----------
     space : ss
-        Spatial grid structure.
+        Spatial grid structure (``typespace.ss``).
     pulse : ps
-        Pulse parameter structure.
+        Pulse parameter structure (``typepulse.ps``).
 
     Returns
     -------
@@ -60,6 +88,7 @@ def InitializeTFSF(space, pulse) -> NDArray[_dp]:
     return tfsf
 
 
+
 def UpdateTFSC(
     E: NDArray[_dc],
     tfsf: NDArray[_dp],
@@ -68,16 +97,31 @@ def UpdateTFSC(
     pulse,
     Emax_amp: float,
 ) -> None:
-    """Additive soft-source injection (in-place).
+    r"""Additive soft-source injection (in-place).
 
-    Adds the analytical incident field to the propagated field, weighted by
-    the source profile. The dx factor makes the emitted amplitude independent
-    of grid spacing.
+    At each time step the analytical incident field is **added** to the
+    propagated field, weighted by the narrow source profile:
+
+    .. math::
+
+        E(\mathbf{r}) = E_{\text{prop}}(\mathbf{r})
+                       + S(x)\,E_{\text{inc}}(\mathbf{r}, t)\,\Delta x
+
+    This is the "soft source" approach (Schneider 2010, Ch. 5): the field
+    is not replaced but augmented, so Maxwell's equations remain
+    self-consistent everywhere.  The propagated field passes through the
+    source region undisturbed, while the additive term generates new
+    outgoing waves.
+
+    The factor :math:`\Delta x` converts the normalised profile
+    (:math:`\int S\,dx = 1`) to a dimensionally correct discrete source,
+    making the emitted amplitude proportional to ``Emax_amp`` regardless
+    of grid spacing or source width :math:`\sigma`.
 
     Parameters
     ----------
     E : ndarray, shape (Nx, Ny, Nz), complex128
-        Field component in k-space. Modified in-place.
+        Field component in k-space.  Modified in-place.
     tfsf : ndarray, shape (Nx,), float64
         Source profile from ``InitializeTFSF``.
     space : ss
