@@ -1,0 +1,8 @@
+3       ! Dimensions
+512     ! Nx  (1.02 um grid)
+1       ! Ny
+1       ! Nz
+2d-9    ! dx
+2d-9    ! dy
+2d-9    ! dz
+9.1     ! epsilon_r (AlAs)

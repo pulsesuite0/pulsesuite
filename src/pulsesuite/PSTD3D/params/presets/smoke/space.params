@@ -1,0 +1,8 @@
+3       ! Dimensions
+128     ! Nx  (256 nm grid -- minimal, just tests compilation/IO)
+1       ! Ny
+1       ! Nz
+2d-9    ! dx
+2d-9    ! dy
+2d-9    ! dz
+9.1     ! epsilon_r (AlAs)

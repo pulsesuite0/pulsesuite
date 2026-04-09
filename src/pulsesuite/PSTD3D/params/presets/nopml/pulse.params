@@ -1,0 +1,6 @@
+800d-9    ! Vacuum laser wavelength (m)
+1.25d8    ! Peak E-field amplitude (V/m)
+5.0d-15   ! Pulsewidth Tw (s)  -- 5 fs FWHM
+10d-15    ! Pulse peak Tp (s)  -- 10 fs (inside 21 fs window; irrelevant for IC mode)
+0d0       ! Chirp (rad/s^2)
+5d-6      ! Beam waist w0 (m)

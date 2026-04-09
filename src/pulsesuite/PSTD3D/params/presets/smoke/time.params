@@ -1,0 +1,4 @@
+0d0       ! Initial t-position (s)
+500d-18   ! Final t-position (s)  -- 500 as, just 500 steps
+1d-18     ! dt (s)
+0         ! Current t-index

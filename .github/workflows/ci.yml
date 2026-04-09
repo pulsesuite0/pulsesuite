@@ -72,4 +72,3 @@ jobs:
     - name: Check formatting with ruff
       run: |
         ruff format --check src/ tests/
-

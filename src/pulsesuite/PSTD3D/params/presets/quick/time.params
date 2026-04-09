@@ -1,0 +1,4 @@
+40d-15    ! Initial t-position (s)  -- skip dead time before pulse onset
+75d-15    ! Final t-position (s)   -- captures full pulse + early propagation
+1d-18     ! dt (s)
+0         ! Current t-index

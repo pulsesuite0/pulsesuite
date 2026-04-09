@@ -1,0 +1,4 @@
+40d-15    ! Initial t-position (s)
+100d-15   ! Final t-position (s)  -- pulse + propagation across half the grid
+1d-18     ! dt (s)
+0         ! Current t-index

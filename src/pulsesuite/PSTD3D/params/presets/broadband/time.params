@@ -1,0 +1,4 @@
+15d-15    ! Initial t-position (s)
+45d-15    ! Final t-position (s)
+1d-18     ! dt (s)
+0         ! Current t-index
