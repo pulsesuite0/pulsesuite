@@ -1,0 +1,4 @@
+0d0       ! Initial t (s)
+50d-15    ! Final t (s) = 50 fs  (shorter grid, pulse exits in ~40 fs)
+8d-18     ! dt (s) = 8 as  (CFL=0.69, dt_max=11.6as, safe margin 31%)
+0         ! Current t-index

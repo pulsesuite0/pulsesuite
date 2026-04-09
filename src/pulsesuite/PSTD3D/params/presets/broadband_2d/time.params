@@ -1,0 +1,4 @@
+0d0       ! Initial t (s)
+30d-15    ! Final t (s) = 30 fs (broadband pulse is shorter, exits faster)
+8d-18     ! dt (s) = 8 as  (CFL=0.69, dt_max=11.6as, safe margin 31%)
+0         ! Current t-index

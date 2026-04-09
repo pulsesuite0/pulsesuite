@@ -1,0 +1,6 @@
+800d-9    ! Vacuum laser wavelength (m)
+1.25d8    ! Peak E-field amplitude (V/m)
+2.0d-15   ! Pulsewidth Tw (s)  -- 2 fs ultrabroadband (sub-2-cycle)
+30d-15    ! Pulse peak Tp (s)
+0d0       ! Chirp (rad/s^2)
+0.5d-6    ! Beam waist w0 (m)

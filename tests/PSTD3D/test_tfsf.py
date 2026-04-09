@@ -35,6 +35,7 @@ import numpy as np
 import pytest
 from scipy.constants import c as c0
 
+from pulsesuite.core.fftw import fft_3D, ifft_3D
 from pulsesuite.PSTD3D.tfsf import InitializeTFSF, UpdateTFSC
 from pulsesuite.PSTD3D.typepulse import ps
 from pulsesuite.PSTD3D.typespace import GetDx, GetXArray, GetYArray, GetZArray, ss
@@ -323,8 +324,8 @@ class TestUpdateTFSCIncidentField:
         E = _zeros(Nx, Ny, Nz)
         UpdateTFSC(E, tfsf, space, time, pulse, Emax_amp=pulse.Amp)
 
-        # Use np.fft to avoid pyFFTW plan-time input destruction
-        E_out = np.fft.ifftn(E)
+        E_out = E.copy()
+        ifft_3D(E_out)
 
         # At the peak of the source profile, all (y,z) slices should be identical
         peak_x = np.argmax(tfsf)
@@ -344,7 +345,8 @@ class TestUpdateTFSCIncidentField:
         E = _zeros(Nx, Ny, Nz)
         UpdateTFSC(E, tfsf, space, time, pulse, Emax_amp=pulse.Amp)
 
-        E_out = np.fft.ifftn(E)
+        E_out = E.copy()
+        ifft_3D(E_out)
 
         # At the source peak, centre (y≈0,z≈0) should be stronger than edges
         peak_x = np.argmax(tfsf)
@@ -399,16 +401,16 @@ class TestUpdateTFSCInvariants:
         time = _time()
         tfsf = InitializeTFSF(space, pulse)
 
-        # Create known field (use np.fft to avoid pyFFTW plan-time
-        # input destruction)
+        # Create known field
         E_real_orig = RNG.standard_normal((Nx, Ny, Nz)).astype(np.complex128)
-        E = np.fft.fftn(E_real_orig)
+        E = E_real_orig.copy()
+        fft_3D(E)
         E_before = E.copy()
 
         UpdateTFSC(E, tfsf, space, time, pulse, Emax_amp=0.0)
 
         # With Emax_amp=0, the additive term is 0, so E should survive
-        # the IFFT->FFT round-trip unchanged
+        # the IFFT→FFT round-trip unchanged
         assert np.allclose(E, E_before, rtol=1e-10, atol=1e-10)
 
     def test_multiple_calls_stable(self):

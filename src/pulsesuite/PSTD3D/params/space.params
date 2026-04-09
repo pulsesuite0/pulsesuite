@@ -1,0 +1,8 @@
+3       ! Dimensions
+2048    ! Nx  (4.09 um grid along propagation axis)
+256     ! Ny  (transverse: 256 pts, dk_y/k_carrier=0.52, no aliasing)
+1       ! Nz  (2D: no z-extent)
+2d-9    ! dx (m)
+2d-9    ! dy (m) — resolves lambda_med/2 = 133nm with 66 pts
+2d-9    ! dz (m)
+9.1     ! epsilon_r (AlAs, n=3.017, lambda_med=265nm)

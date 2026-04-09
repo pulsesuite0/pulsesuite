@@ -1,0 +1,8 @@
+3       ! Dimensions
+512     ! Nx  (1.02 um grid along propagation axis)
+128     ! Ny  (transverse: dk_y/k_carrier=1.04)
+128     ! Nz  (transverse: dk_z/k_carrier=1.04)
+2d-9    ! dx (m)
+2d-9    ! dy (m)
+2d-9    ! dz (m)
+9.1     ! epsilon_r (AlAs, n=3.017, lambda_med=265nm)

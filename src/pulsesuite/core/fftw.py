@@ -1,11 +1,3 @@
-"""FFT wrappers for PSTD3D, ported from Fortran fftw module.
-
-Uses SciPy FFT by default with optional pyFFTW acceleration.
-Includes Hankel transform support for radial grids.
-
-Author: Emily S. Hatten
-"""
-
 from __future__ import annotations
 
 import os
@@ -79,11 +71,7 @@ __all__ = [
 ]
 
 
-# --------------------------------------------------------------------------------------
 # Utility helpers
-# --------------------------------------------------------------------------------------
-
-
 def _asF(a: NDArray, dtype) -> NDArray:
     """Return Fortran-contiguous view/copy of `a` with dtype, no-copy if possible."""
     b = np.asarray(a, dtype=dtype, order="F")
@@ -143,11 +131,7 @@ def _fftn(
         return out.astype(_dc, copy=False)
 
 
-# --------------------------------------------------------------------------------------
 # Nyquist helpers (phase flip to center the FFT)
-# --------------------------------------------------------------------------------------
-
-
 def nyquist_1D(Z: NDArray[_dc]) -> None:
     s = (1.0 - 2.0 * (np.arange(Z.shape[0]) % 2)).astype(_dp)
     Z *= s
@@ -168,11 +152,7 @@ def nyquist_3D(Z: NDArray[_dc]) -> None:
     Z *= s
 
 
-# --------------------------------------------------------------------------------------
 # 1D FFTs (in-place semantics)
-# --------------------------------------------------------------------------------------
-
-
 def fft_1D(Z: NDArray[_dc]) -> None:
     Zf = _asF(Z, _dc)
     out = _fft1(Zf, inverse=False)
@@ -197,11 +177,7 @@ def ifftc_1D(Z: NDArray[_dc]) -> None:
     nyquist_1D(Z)
 
 
-# --------------------------------------------------------------------------------------
 # 2D FFTs
-# --------------------------------------------------------------------------------------
-
-
 def fft_2D(Z: NDArray[_dc]) -> None:
     Zf = _asF(Z, _dc)
     out = _fftn(Zf, axes=(0, 1), inverse=False)
@@ -226,11 +202,7 @@ def ifftc_2D(Z: NDArray[_dc]) -> None:
     nyquist_2D(Z)
 
 
-# --------------------------------------------------------------------------------------
 # 3D FFTs
-# --------------------------------------------------------------------------------------
-
-
 def fftw_initialize_2D(Z: NDArray[_dc]) -> None:
     """API-compat stub: planning handled by SciPy/pyFFTW internally."""
     return
@@ -242,9 +214,6 @@ def fftw_initialize_3D(Z: NDArray[_dc]) -> None:
 
 
 # 3D FFTs
-# --------------------------------------------------------------------------------------
-
-
 def fft_3D(Z: NDArray[_dc]) -> None:
     Zf = _asF(Z, _dc)
     out = _fftn(Zf, axes=(0, 1, 2), inverse=False)
@@ -269,9 +238,7 @@ def ifftc_3D(Z: NDArray[_dc]) -> None:
     nyquist_3D(Z)
 
 
-# --------------------------------------------------------------------------------------
 # Hankel transform (radial mix with FFT)
-# --------------------------------------------------------------------------------------
 _HT: Optional[NDArray[_dp]] = None  # (Nr, Nr)
 _a_zeros: Optional[NDArray[_dp]] = None  # J0 zeros, length Nr+1
 
@@ -320,11 +287,7 @@ def HankelTransform(f: NDArray[_dc]) -> None:
     f[...] = (_HT @ f).astype(_dc, copy=False)
 
 
-# --------------------------------------------------------------------------------------
 # Mixed transforms on 3D fields (r, y, t) with special 1×Nr×Nt radial case
-# --------------------------------------------------------------------------------------
-
-
 def Transform(Z: NDArray[_dc]) -> None:
     """If Z has shape (1, Nr, Nt), apply Hankel along r and FFT along t; else FFT3D.
 
@@ -366,9 +329,7 @@ def iTransform(Z: NDArray[_dc]) -> None:
         ifft_3D(Z)
 
 
-# -----------------------------------------------------------------------------
 # Aliases with lowercase _1d/_2d/_3d to match some imports in the codebase
-# -----------------------------------------------------------------------------
 fft_1d = fft_1D
 ifft_1d = ifft_1D
 fftc_1d = fftc_1D

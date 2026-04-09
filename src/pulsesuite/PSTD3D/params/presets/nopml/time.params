@@ -1,0 +1,4 @@
+0d0       ! Initial t-position (s)
+21d-15    ! Final t-position (s)  -- ~2 transit times (Lx/v = 10.3 fs)
+1d-18     ! dt (s)
+0         ! Current t-index

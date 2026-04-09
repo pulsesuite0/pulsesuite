@@ -1,0 +1,4 @@
+40d-15    ! Initial t-position (s)
+140d-15   ! Final t-position (s)  -- full propagation + PML absorption
+1d-18     ! dt (s)
+0         ! Current t-index

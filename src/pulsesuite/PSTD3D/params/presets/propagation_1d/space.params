@@ -1,0 +1,8 @@
+3       ! Dimensions
+4096    ! Nx  (8.19 um grid, dx=2nm, 133 pts/wavelength)
+1       ! Ny  (1D: no transverse)
+1       ! Nz  (1D: no transverse)
+2d-9    ! dx (m)
+2d-9    ! dy (m)
+2d-9    ! dz (m)
+9.1     ! epsilon_r (AlAs, n=3.017, v=9.94e7 m/s)

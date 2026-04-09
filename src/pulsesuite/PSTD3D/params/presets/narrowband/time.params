@@ -1,0 +1,4 @@
+30d-15    ! Initial t-position (s)
+120d-15   ! Final t-position (s)  -- long pulse needs longer window
+1d-18     ! dt (s)
+0         ! Current t-index

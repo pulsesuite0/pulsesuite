@@ -1,0 +1,8 @@
+3       ! Dimensions
+4096    ! Nx  (8.19 um grid -- full production run)
+1       ! Ny
+1       ! Nz
+2d-9    ! dx
+2d-9    ! dy
+2d-9    ! dz
+9.1     ! epsilon_r (AlAs)

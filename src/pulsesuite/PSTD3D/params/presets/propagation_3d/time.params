@@ -1,0 +1,4 @@
+0d0       ! Initial t (s)
+25d-15    ! Final t (s) = 25 fs  (shorter grid, pulse exits in ~20 fs)
+6d-18     ! dt (s) = 6 as  (PSTD CFL=0.81, dt_max_3D=7.4as, margin 19%)
+0         ! Current t-index
